@@ -1,7 +1,7 @@
 import { assertEquals } from "jsr:@std/assert";
-import { convertToLogseq } from "./outliner.ts";
+import { outlineMarkdown } from "./outliner.ts";
 
-Deno.test("convertToLogseq", async (t) => {
+Deno.test("outlineMarkdown", async (t) => {
   await t.step("should convert headings and paragraphs correctly", () => {
     const input = `
 # h1
@@ -27,16 +27,16 @@ another paragraph
   - paragraph
   - ## h2
     - next paragraph
-      - a list
-      - of items
-        - and nested items
-        - with more items
-          - inside
-          - them
+    - a list
+    - of items
+      - and nested items
+      - with more items
+        - inside
+        - them
     - another paragraph
 `.trim();
 
-    assertEquals(convertToLogseq(input), expectedOutput);
+    assertEquals(outlineMarkdown(input), expectedOutput);
   });
 
   await t.step("should handle nested headings correctly", () => {
@@ -72,8 +72,8 @@ h4 paragraph out of order
   - paragraph
   - ## h2-1
     - next paragraph
-      - a list
-      - of items
+    - a list
+    - of items
     - another paragraph
     - ### h3
       - h3 paragraph
@@ -83,6 +83,96 @@ h4 paragraph out of order
       - h4 paragraph out of order
 `.trim();
 
-    assertEquals(convertToLogseq(input), expectedOutput);
+    assertEquals(outlineMarkdown(input), expectedOutput);
+  });
+});
+
+Deno.test("outlineMarkdown with listNesting option", async (t) => {
+  const input = `
+# h1
+
+- a
+- b
+  - c
+  - d
+
+## h2
+
+paragraph
+
+- a
+- b
+  - c
+  - d
+
+paragraph
+`.trim();
+
+  await t.step("no extra nesting", () => {
+    const expectedOutput = `
+- # h1
+  - a
+  - b
+    - c
+    - d
+  - ## h2
+    - paragraph
+    - a
+    - b
+      - c
+      - d
+    - paragraph
+`.trim();
+
+    assertEquals(
+      outlineMarkdown(input, { listNesting: "none" }),
+      expectedOutput,
+    );
+  });
+
+  await t.step("nesting lists in paragraphs", () => {
+    const expectedOutput = `
+- # h1
+  - a
+  - b
+    - c
+    - d
+  - ## h2
+    - paragraph
+      - a
+      - b
+        - c
+        - d
+    - paragraph
+`.trim();
+
+    assertEquals(
+      outlineMarkdown(input, { listNesting: "paragraph" }),
+      expectedOutput,
+    );
+  });
+
+  await t.step("nesting lists in empty blocks", () => {
+    const expectedOutput = `
+- # h1
+  -
+    - a
+    - b
+      - c
+      - d
+  - ## h2
+    - paragraph
+    -
+      - a
+      - b
+        - c
+        - d
+    - paragraph
+`.trim();
+
+    assertEquals(
+      outlineMarkdown(input, { listNesting: "separate" }),
+      expectedOutput,
+    );
   });
 });
