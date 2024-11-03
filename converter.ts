@@ -185,9 +185,9 @@ const convertFrontmatter: ConversionRule = {
     if (!match) return content;
 
     const yamlContent = match[1];
-    const parsedYaml = yaml.parse(yamlContent, { schema: "failsafe" }) as {
-      [key: string]: any;
-    };
+    const parsedYaml = yaml.parse(yamlContent, {
+      schema: "failsafe",
+    }) as Record<string, string | string[]>;
     const properties: string[] = [];
 
     for (const [key, value] of Object.entries(parsedYaml)) {
@@ -204,14 +204,14 @@ const convertEmbeds: ConversionRule = {
   name: "embeds",
   convert: (content: string) => {
     // Convert Obsidian embeds to Logseq format
-    content = content.replace(/!\[\[(.*?)\]\]/g, (match, embed) => {
+    content = content.replace(/!\[\[(.*?)\]\]/g, (_match, embed) => {
       return `{{embed [[${embed}]]}}`;
     });
 
     // Convert video embeds from YouTube and Vimeo
     content = content.replace(
       /!\[(.*?)\]\((https:\/\/(?:www\.)?(youtube\.com\/watch\?v=|youtu\.be\/|vimeo\.com\/)[^\s]+)\)/g,
-      (match, altText, url) => {
+      (_match, _altText, url) => {
         return `{{video ${url}}}`;
       },
     );

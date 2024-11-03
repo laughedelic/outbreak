@@ -23,7 +23,7 @@ export function convertToLogseq(markdown: string): string {
       stack.push({ level, prefix });
     } else if (listMatch) {
       // TODO: should list be nested under the last paragraph?
-      const indent = listMatch[1];
+      // const indent = listMatch[1];
       const text = listMatch[2];
       const prefix = stack.length
         ? "  " + stack[stack.length - 1].prefix
