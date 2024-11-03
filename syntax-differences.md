@@ -114,6 +114,8 @@ tip note
 	- works same for block embeds
 	- different ways to [embed media](https://docs.logseq.com/#/page/embed%20media%20-%20audio%2C%20photos%2C%20videos)
 
+> [!TODO]
+> embedding blocks: `![[page#^reference_id]]` vs. `{{embed ((block reference))}}`
 
 #### Video embeds
 

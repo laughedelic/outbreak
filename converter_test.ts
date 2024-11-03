@@ -3,14 +3,6 @@ import { MarkdownConverter } from "./converter.ts";
 
 const converter = new MarkdownConverter();
 
-// Helper function to test a single conversion
-function testConversion(input: string, expected: string, description: string) {
-  Deno.test(description, () => {
-    const result = converter.convert(input);
-    assertEquals(result, expected);
-  });
-}
-
 // Task Tests
 Deno.test("Tasks", async (t) => {
   await t.step("simple tasks", () => {
