@@ -1,4 +1,4 @@
-import * as yaml from "jsr:@std/yaml/parse";
+// converter.ts
 
 type ConversionRule = {
   name: string;
@@ -182,23 +182,70 @@ const convertFrontmatter: ConversionRule = {
     const frontmatterRegex = /^---\n([\s\S]*?)\n---\n/;
     const match = content.match(frontmatterRegex);
 
-    if (!match) return content;
+    if (!match) {
+      return content;
+    }
 
     const yamlContent = match[1];
-    const parsedYaml = yaml.parse(yamlContent, { schema: "failsafe" });
     const properties: string[] = [];
+    let currentKey: string | null = null;
+    let arrayValues: string[] = [];
 
-    for (const [key, value] of Object.entries(parsedYaml)) {
-      if (Array.isArray(value)) {
-        properties.push(`${key}:: ${value.join(", ")}`);
-      } else {
-        properties.push(`${key}:: ${value}`);
+    yamlContent.split("\n").forEach((line) => {
+      const trimmedLine = line.trim();
+      if (!trimmedLine) return;
+
+      // Check if this is a bullet point in a YAML array
+      if (trimmedLine.startsWith("- ")) {
+        const value = trimmedLine.slice(2).trim()
+          .replace(/^"(.*)"$/, "$1")
+          .replace(/^'(.*)'$/, "$1");
+        arrayValues.push(value);
+        return;
       }
+
+      // If we were collecting array values, add them now
+      if (currentKey && arrayValues.length > 0) {
+        properties.push(`${currentKey}:: ${arrayValues.join(", ")}`);
+        arrayValues = [];
+      }
+
+      // Handle key-value pairs
+      const colonIndex = line.indexOf(":");
+      if (colonIndex === -1) return;
+
+      const key = line.slice(0, colonIndex).trim();
+      let value = line.slice(colonIndex + 1).trim();
+      currentKey = key;
+
+      // Handle YAML array syntax: aliases: ["value1", "value2"]
+      if (value.startsWith("[") && value.endsWith("]")) {
+        value = value
+          .slice(1, -1) // Remove brackets
+          .split(",")
+          .map((v) =>
+            v.trim()
+              .replace(/^"(.*)"$/, "$1")
+              .replace(/^'(.*)'$/, "$1")
+          ) // Remove quotes
+          .join(", ");
+        properties.push(`${key}:: ${value}`);
+        currentKey = null;
+      } else if (value) {
+        // Handle simple key-value pairs
+        properties.push(`${key}:: ${value}`);
+        currentKey = null;
+      }
+    });
+
+    // Handle any remaining array values
+    if (currentKey && arrayValues.length > 0) {
+      properties.push(`${currentKey}:: ${arrayValues.join(", ")}`);
     }
 
     // Format properties with proper indentation
     let formattedProperties = properties.map((prop, index) => {
-      const prefix = index === 0 ? "- " : "  "; // TODO: should it be \t?
+      const prefix = index === 0 ? "- " : "  ";
       return `${prefix}${prop}`;
     }).join("\n");
 
