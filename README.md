@@ -50,17 +50,6 @@ deno lint
 deno fmt
 ```
 
-## Potential Improvements
+## License
 
-- Enhanced Error Handling: Improve error handling for edge cases and malformed Markdown.
-- Additional Markdown Features: Support more Markdown features and plugins used in Obsidian and Logseq.
-  - Deeper Obsidian Tasks plugin support: due date, scheduled, etc.
-- Configuration Options: Add configuration options for different conversion rules and output formats.
-  - Space vs. tabs indentation
-  - Treating H1 as a page title property
-- A full migration script that can handle the entire vault, including file renaming and folder restructuring.
-  - Unlike in Obsidian, Logseq's file structure is very prescriptive:
-    - daily notes: `journals/YYYY-MM-DD.md` (flat structure, date format is partially configurable)
-    - assets: `assets/` (flat structure)
-    - pages: `pages/` (flat structure), all non-daily notes can be moved there without changing the subfolder structure
-  - Nice to have: interactive migration script with progress report and error handling
+> [!TODO] add an open-source license, probably LGPL or MPL
