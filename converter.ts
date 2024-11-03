@@ -185,24 +185,18 @@ const convertFrontmatter: ConversionRule = {
     if (!match) return content;
 
     const yamlContent = match[1];
-    const parsedYaml = yaml.parse(yamlContent, { schema: "failsafe" });
+    const parsedYaml = yaml.parse(yamlContent, { schema: "failsafe" }) as {
+      [key: string]: any;
+    };
     const properties: string[] = [];
 
     for (const [key, value] of Object.entries(parsedYaml)) {
-      if (Array.isArray(value)) {
-        properties.push(`${key}:: ${value.join(", ")}`);
-      } else {
-        properties.push(`${key}:: ${value}`);
-      }
+      const prefix = properties.length ? "  " : "- "; // TODO: spaces or tabs?
+      const valueStr = Array.isArray(value) ? value.join(", ") : value;
+      properties.push(`${prefix}${key}:: ${valueStr}`);
     }
 
-    // Format properties with proper indentation
-    let formattedProperties = properties.map((prop, index) => {
-      const prefix = index === 0 ? "- " : "  "; // TODO: should it be \t?
-      return `${prefix}${prop}`;
-    }).join("\n");
-
-    return content.replace(frontmatterRegex, `${formattedProperties}\n`);
+    return content.replace(frontmatterRegex, `${properties.join("\n")}\n`);
   },
 };
 
