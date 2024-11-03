@@ -108,6 +108,48 @@ Deno.test("Wiki-links", async (t) => {
   });
 });
 
+// Embed Tests
+Deno.test("Embeds", async (t) => {
+  await t.step("simple embed", () => {
+    const input = "Check this embed: ![[Page]]";
+    const expected = "Check this embed: {{embed [[Page]]}}";
+    assertEquals(converter.convert(input), expected);
+  });
+
+  await t.step("embed with path", () => {
+    const input = "Embed with path: ![[path/to/Page]]";
+    const expected = "Embed with path: {{embed [[path/to/Page]]}}";
+    assertEquals(converter.convert(input), expected);
+  });
+
+  await t.step("multiple embeds", () => {
+    const input = "Multiple embeds: ![[Page1]] and ![[Page2]]";
+    const expected =
+      "Multiple embeds: {{embed [[Page1]]}} and {{embed [[Page2]]}}";
+    assertEquals(converter.convert(input), expected);
+  });
+
+  await t.step("embed within task", () => {
+    const input = "- [ ] Check this embed: ![[Page]]";
+    const expected = "- TODO Check this embed: {{embed [[Page]]}}";
+    assertEquals(converter.convert(input), expected);
+  });
+
+  await t.step("YouTube video embed", () => {
+    const input =
+      "Watch this video: ![Video](https://www.youtube.com/watch?v=yu27PWzJI_Y)";
+    const expected =
+      "Watch this video: {{video https://www.youtube.com/watch?v=yu27PWzJI_Y}}";
+    assertEquals(converter.convert(input), expected);
+  });
+
+  await t.step("Vimeo video embed", () => {
+    const input = "Watch this video: ![Video](https://vimeo.com/123456789)";
+    const expected = "Watch this video: {{video https://vimeo.com/123456789}}";
+    assertEquals(converter.convert(input), expected);
+  });
+});
+
 // Complex Cases
 Deno.test("Complex Cases", async (t) => {
   await t.step("mixed elements", () => {

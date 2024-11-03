@@ -114,6 +114,14 @@ tip note
 	- works same for block embeds
 	- different ways to [embed media](https://docs.logseq.com/#/page/embed%20media%20-%20audio%2C%20photos%2C%20videos)
 
+
+#### Video embeds
+
+- Obsidian: `![](https://www.youtube.com/watch?v=video_id)`
+	- standard markdown syntax
+- Logseq: `{{video https://www.youtube.com/watch?v=video_id}}`
+	- https://docs.logseq.com/#/page/embed%20media%20-%20audio%2C%20photos%2C%20videos
+
 ### Highlights
 
 - Obsidian: `Text with ==a highlight== in the middle`

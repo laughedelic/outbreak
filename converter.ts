@@ -200,6 +200,28 @@ const convertFrontmatter: ConversionRule = {
   },
 };
 
+const convertEmbeds: ConversionRule = {
+  name: "embeds",
+  convert: (content: string) => {
+    // Convert Obsidian embeds to Logseq format
+    content = content.replace(/!\[\[(.*?)\]\]/g, (match, embed) => {
+      return `{{embed [[${embed}]]}}`;
+    });
+
+    // Convert video embeds from YouTube and Vimeo
+    content = content.replace(
+      /!\[(.*?)\]\((https:\/\/(?:www\.)?(youtube\.com\/watch\?v=|youtu\.be\/|vimeo\.com\/)[^\s]+)\)/g,
+      (match, altText, url) => {
+        return `{{video ${url}}}`;
+      },
+    );
+
+    // TODO: another case for tweets
+
+    return content;
+  },
+};
+
 // Add the new rule to the rules array
 export class MarkdownConverter {
   private rules: ConversionRule[];
@@ -212,6 +234,7 @@ export class MarkdownConverter {
       convertTasks, // Then lists/tasks
       convertHighlights, // Then inline formatting
       convertWikiLinks, // Then links
+      convertEmbeds, // Finally, process embeds
     ];
   }
 
