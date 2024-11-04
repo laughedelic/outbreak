@@ -1,5 +1,6 @@
 import { assertEquals } from "jsr:@std/assert";
-import { outlineMarkdown } from "./outliner.ts";
+// import { outlineMarkdown } from "./outliner.ts";
+import { outlineMarkdown } from "./outlinerv2.ts";
 
 Deno.test("outlineMarkdown", async (t) => {
   await t.step("should convert headings and paragraphs correctly", () => {
@@ -81,6 +82,41 @@ h4 paragraph out of order
     - h2-2 paragraph
     - #### h4
       - h4 paragraph out of order
+`.trim();
+
+    assertEquals(outlineMarkdown(input), expectedOutput);
+  });
+
+  await t.step("should handle multiline lists", () => {
+    const input = `
+- prop:: value
+  tags:: tag1, tag2
+  title:: Title
+
+paragraph
+
+- a list
+  of items
+  - and nested items
+  - with more items
+    - inside
+      them
+
+another paragraph
+`.trim();
+
+    const expectedOutput = `
+- prop:: value
+  tags:: tag1, tag2
+  title:: Title
+- paragraph
+- a list
+  of items
+  - and nested items
+  - with more items
+    - inside
+      them
+- another paragraph
 `.trim();
 
     assertEquals(outlineMarkdown(input), expectedOutput);
@@ -172,6 +208,48 @@ paragraph
 
     assertEquals(
       outlineMarkdown(input, { listNesting: "separate" }),
+      expectedOutput,
+    );
+  });
+});
+
+Deno.test("outlineMarkdown handling block quotes", async (t) => {
+  const input = `
+# h1
+
+#+BEGIN_QUOTE
+quote
+  text
+   with any indentation
+#+END_QUOTE
+
+## h2
+
+#+BEGIN_QUOTE
+quote
+  text
+   with any indentation
+#+END_QUOTE
+`.trim();
+
+  await t.step("correct quote indentation", () => {
+    const expectedOutput = `
+- # h1
+  - #+BEGIN_QUOTE
+    quote
+      text
+       with any indentation
+    #+END_QUOTE
+  - ## h2
+    - #+BEGIN_QUOTE
+      quote
+        text
+         with any indentation
+      #+END_QUOTE
+`.trim();
+
+    assertEquals(
+      outlineMarkdown(input, { listNesting: "none" }),
       expectedOutput,
     );
   });

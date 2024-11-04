@@ -23,7 +23,13 @@ export function outlineMarkdown(
   lines.forEach((line) => {
     const headingMatch = line.match(/^(#+)\s+(.*)/);
     const listMatch = line.match(/^(\s*)-\s+(.*)/);
-    const isParagraph = !headingMatch && !listMatch && line.trim() !== "";
+    const listContinuationMatch = line.match(/^(\s*)(.*)/);
+    const isList = listMatch ||
+      (listContinuationMatch && previousMatch === "list");
+
+    const paragraphMatch = line.match(/^\S+(.*)/);
+    const isParagraph = paragraphMatch &&
+      (!previousMatch || previousMatch === "paragraph");
 
     if (headingMatch) {
       const level = headingMatch[1].length;
@@ -35,7 +41,7 @@ export function outlineMarkdown(
       result.push(`${prefix}${"#".repeat(level)} ${text}`);
       stack.push({ level, prefix });
       previousMatch = "heading";
-    } else if (listMatch) {
+    } else if (isList) {
       if (options.listNesting === "separate" && previousMatch !== "list") {
         // add an extra empty block to separate list items from the previous paragraph
         result.push(`${getPrefix()}`.trimEnd()); // TODO: check if there should be a space
@@ -47,8 +53,7 @@ export function outlineMarkdown(
         // add another level of nesting on the stack
         stack.push({ level: stack.length + 1, prefix: getPrefix() });
       }
-      const indent = listMatch[1];
-      const text = listMatch[2];
+      const [indent, text] = listMatch ? listMatch : listContinuationMatch!;
       const prefix = getPrefix();
       result.push(`${indent}${prefix}${text}`);
       previousMatch = "list";
@@ -61,6 +66,8 @@ export function outlineMarkdown(
       const prefix = getPrefix();
       result.push(`${prefix}${line}`);
       previousMatch = "paragraph";
+    } else {
+      previousMatch = undefined;
     }
   });
 
