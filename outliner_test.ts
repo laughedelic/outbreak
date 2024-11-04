@@ -1,6 +1,5 @@
 import { assertEquals } from "jsr:@std/assert";
-// import { outlineMarkdown } from "./outliner.ts";
-import { outlineMarkdown } from "./outlinerv2.ts";
+import { outlineMarkdown } from "./outliner.ts";
 
 Deno.test("outlineMarkdown", async (t) => {
   await t.step("should convert headings and paragraphs correctly", () => {
