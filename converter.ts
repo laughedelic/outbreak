@@ -73,6 +73,7 @@ const convertTasks: ConversionRule = {
   },
 };
 
+// TODO: refactor this as a case for callouts
 const convertBlockQuotes: ConversionRule = {
   name: "blockquotes",
   convert: (content: string) => {
@@ -209,8 +210,9 @@ const convertEmbeds: ConversionRule = {
     });
 
     // Convert video embeds from YouTube and Vimeo
+    // NOTE: might not handle all possible short URLs
     content = content.replace(
-      /!\[(.*?)\]\((https:\/\/(?:www\.)?(youtube\.com\/watch\?v=|youtu\.be\/|vimeo\.com\/)[^\s]+)\)/g,
+      /!\[(.*?)\]\((https:\/\/(?:www\.)?(youtube\.com\/watch\?v=|youtu\.be\/|vimeo\.com\/)[^\s)]+)\)/g,
       (_match, _altText, url) => {
         return `{{video ${url}}}`;
       },
@@ -221,6 +223,8 @@ const convertEmbeds: ConversionRule = {
     return content;
   },
 };
+
+// TODO: a rule for numbered lists
 
 // Add the new rule to the rules array
 export class MarkdownConverter {
