@@ -5,6 +5,69 @@ type ConversionRule = {
   convert: (content: string) => string;
 };
 
+type TaskDateType =
+  | "deadline"
+  | "scheduled"
+  | "created"
+  | "start"
+  | "done"
+  | "cancelled";
+
+type TaskDate = {
+  type: TaskDateType;
+  date: string;
+  emoji: string;
+};
+
+const TaskStatusMapping: Record<string, string> = {
+  " ": "TODO",
+  "/": "DOING",
+  "x": "DONE",
+  "-": "CANCELLED",
+};
+
+const TaskDateTypeMapping: Record<string, TaskDateType> = {
+  "📅": "deadline",
+  "⏳": "scheduled",
+  "🛫": "start",
+  "➕": "created",
+  "✅": "done",
+  "❌": "cancelled",
+};
+
+type TaskPriority = "A" | "B" | "C";
+
+const TaskPriorityMapping: Record<string, TaskPriority> = {
+  "🔺": "A",
+  "⏫": "A",
+  "🔼": "B",
+  "🔽": "C",
+  "⏬": "C",
+};
+
+// Types at the top of the file
+type TasksConfig = {
+  globalFilterTag?: string;
+  priorityMapping: Record<string, TaskPriority>;
+  convertDates: boolean;
+  createDateProperty: boolean;
+};
+
+// Default configuration
+const DEFAULT_TASKS_CONFIG: TasksConfig = {
+  priorityMapping: TaskPriorityMapping,
+  convertDates: true,
+  createDateProperty: false,
+};
+
+// Helper to format dates with day names
+function formatTaskDate(date: string): string {
+  const dayName = new Date(date).toLocaleDateString("en-US", {
+    weekday: "short",
+  });
+  return `${date} ${dayName}`;
+}
+
 // Edge case helper function
 function isEscaped(str: string, pos: number): boolean {
   let count = 0;
@@ -59,19 +122,89 @@ const convertWikiLinks: ConversionRule = {
   },
 };
 
-const convertTasks: ConversionRule = {
+// Modified task conversion rule
+const convertTasks = (
+  config: TasksConfig = DEFAULT_TASKS_CONFIG,
+): ConversionRule => ({
   name: "tasks",
   convert: (content: string) => {
-    // Handle empty task markers
-    content = content.replace(/^(\s*)- \[\s*\]/gm, "$1- TODO");
+    const taskRegex = /^(\s*)- \[([ x\/\-])\](.*?)$/gm;
+    return content.replace(
+      taskRegex,
+      (_, indent, status, text) => {
+        // Parse the task text to extract dates and priority
+        const dates: TaskDate[] = [];
+        let taskText = text;
 
-    return content
-      .replace(/^(\s*)- \[ \]/gm, "$1- TODO")
-      .replace(/^(\s*)- \[\/\]/gm, "$1- DOING")
-      .replace(/^(\s*)- \[x\]/gm, "$1- DONE")
-      .replace(/^(\s*)- \[-\]/gm, "$1- CANCELLED");
+        // Extract and remove dates if enabled
+        if (config.convertDates) {
+          const dateRegex = /(📅|⏳|🛫|➕|✅|❌)\s*(\d{4}-\d{2}-\d{2})/g;
+          let dateMatch;
+
+          while ((dateMatch = dateRegex.exec(text)) !== null) {
+            const [_, emoji, date] = dateMatch;
+            const type = TaskDateTypeMapping[emoji] as TaskDate["type"];
+
+            dates.push({ type, date, emoji });
+          }
+
+          taskText = taskText.replace(dateRegex, "");
+        }
+
+        // Extract and remove priority if present
+        let priority = "";
+        for (
+          const [emoji, logseqPriority] of Object.entries(
+            config.priorityMapping,
+          )
+        ) {
+          if (taskText.includes(emoji)) {
+            priority = ` [#${logseqPriority}]`;
+            taskText = taskText.replace(new RegExp(`\\s?${emoji}`), "");
+          }
+        }
+
+        // Remove global filter tag if configured
+        if (config.globalFilterTag) {
+          taskText = taskText.replace(
+            new RegExp(` ${config.globalFilterTag}\\b`),
+            "",
+          );
+        }
+
+        // Convert task status
+        const taskStatus = TaskStatusMapping[status as string];
+
+        // Build the converted task
+        const lines: string[] = [];
+
+        // Main task line with status and priority
+        lines.push(`${indent}- ${taskStatus}${priority}${taskText.trimEnd()}`);
+
+        // Add dates with proper indentation
+        for (const { type, date } of dates) {
+          const formattedDate = formatTaskDate(date);
+          switch (type) {
+            case "deadline":
+              lines.push(`${indent}  DEADLINE: <${formattedDate}>`);
+              break;
+            case "scheduled":
+              lines.push(`${indent}  SCHEDULED: <${formattedDate}>`);
+              break;
+            case "created":
+              if (config.createDateProperty) {
+                lines.push(`${indent}  created:: [[${date}]]`);
+              }
+              break;
+              // Other date types are ignored as they don't have Logseq equivalents
+          }
+        }
+
+        return lines.join("\n");
+      },
+    );
   },
-};
+});
 
 // TODO: refactor this as a case for callouts
 const convertBlockQuotes: ConversionRule = {
@@ -249,12 +382,14 @@ const convertNumberedLists: ConversionRule = {
 export class MarkdownConverter {
   private rules: ConversionRule[];
 
-  constructor() {
+  constructor(config?: Partial<TasksConfig>) {
+    const finalConfig = { ...DEFAULT_TASKS_CONFIG, ...config };
+
     this.rules = [
       convertFrontmatter, // Process frontmatter first
       convertCallouts, // Process callouts next
       convertBlockQuotes, // Then regular blockquotes
-      convertTasks, // Then lists/tasks
+      convertTasks(finalConfig), // Then lists/tasks
       convertHighlights, // Then inline formatting
       convertWikiLinks, // Then links
       convertNumberedLists, // Then numbered lists

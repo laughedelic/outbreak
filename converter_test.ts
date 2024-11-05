@@ -46,6 +46,283 @@ Deno.test("Tasks", async (t) => {
   });
 });
 
+Deno.test("Task advanced features", async (t) => {
+  await t.step("basic task statuses", () => {
+    const converter = new MarkdownConverter();
+
+    const tests = [
+      {
+        name: "converts empty checkbox to TODO",
+        input: "- [ ] Basic task",
+        expected: "- TODO Basic task",
+      },
+      {
+        name: "converts in-progress task to DOING",
+        input: "- [/] In progress",
+        expected: "- DOING In progress",
+      },
+      {
+        name: "converts completed task to DONE",
+        input: "- [x] Completed task",
+        expected: "- DONE Completed task",
+      },
+      {
+        name: "converts cancelled task to CANCELLED",
+        input: "- [-] Cancelled task",
+        expected: "- CANCELLED Cancelled task",
+      },
+    ];
+
+    for (const test of tests) {
+      assertEquals(
+        converter.convert(test.input),
+        test.expected,
+        test.name,
+      );
+    }
+  });
+
+  await t.step("task priorities", () => {
+    const converter = new MarkdownConverter({
+      priorityMapping: {
+        "🔺": "A",
+        "⏫": "A",
+        "🔼": "B",
+        "🔽": "C",
+        "⏬": "C",
+        "💪": "B", // Custom mapping
+      },
+    });
+
+    const tests = [
+      {
+        name: "converts highest priority",
+        input: "- [ ] 🔺 Important task",
+        expected: "- TODO [#A] Important task",
+      },
+      {
+        name: "converts high priority",
+        input: "- [ ] Task ⏫ here",
+        expected: "- TODO [#A] Task here",
+      },
+      {
+        name: "converts medium priority",
+        input: "- [ ] Task 🔼 medium",
+        expected: "- TODO [#B] Task medium",
+      },
+      {
+        name: "converts low priority",
+        input: "- [ ] Low 🔽 task",
+        expected: "- TODO [#C] Low task",
+      },
+      {
+        name: "converts lowest priority",
+        input: "- [ ] Task ⏬ lowest",
+        expected: "- TODO [#C] Task lowest",
+      },
+      {
+        name: "converts custom priority emoji",
+        input: "- [ ] 💪 Custom priority",
+        expected: "- TODO [#B] Custom priority",
+      },
+      {
+        name: "handles priority with status",
+        input: "- [x] 🔺 Done high priority",
+        expected: "- DONE [#A] Done high priority",
+      },
+    ];
+
+    for (const test of tests) {
+      assertEquals(
+        converter.convert(test.input),
+        test.expected,
+        test.name,
+      );
+    }
+  });
+
+  await t.step("task dates", () => {
+    const converter = new MarkdownConverter({
+      convertDates: true,
+      createDateProperty: true,
+    });
+
+    const tests = [
+      {
+        name: "converts deadline date",
+        input: "- [ ] Task 📅 2024-01-01",
+        expected: `- TODO Task
+  DEADLINE: <2024-01-01 Mon>`,
+      },
+      {
+        name: "converts scheduled date",
+        input: "- [ ] Task ⏳ 2024-01-02",
+        expected: `- TODO Task
+  SCHEDULED: <2024-01-02 Tue>`,
+      },
+      {
+        name: "converts created date to property",
+        input: "- [ ] Task ➕ 2024-01-03",
+        expected: `- TODO Task
+  created:: [[2024-01-03]]`,
+      },
+      {
+        name: "ignores other dates",
+        input: "- [ ] Task 🛫 2024-01-04 ✅ 2024-01-05 ❌ 2024-01-06",
+        expected: "- TODO Task",
+      },
+      {
+        name: "handles multiple dates",
+        input: "- [ ] Task 📅 2024-01-01 ⏳ 2024-01-02 ➕ 2024-01-03",
+        expected: `- TODO Task
+  DEADLINE: <2024-01-01 Mon>
+  SCHEDULED: <2024-01-02 Tue>
+  created:: [[2024-01-03]]`,
+      },
+    ];
+
+    for (const test of tests) {
+      assertEquals(
+        converter.convert(test.input),
+        test.expected,
+        test.name,
+      );
+    }
+  });
+
+  await t.step("indentation", () => {
+    const converter = new MarkdownConverter({
+      convertDates: true,
+      createDateProperty: true,
+    });
+
+    const tests = [
+      {
+        name: "preserves single level indentation",
+        input: "  - [ ] Task 📅 2024-01-01",
+        expected: `  - TODO Task
+    DEADLINE: <2024-01-01 Mon>`,
+      },
+      {
+        name: "preserves multiple level indentation",
+        input: "    - [ ] Task 📅 2024-01-01 ⏳ 2024-01-02",
+        expected: `    - TODO Task
+      DEADLINE: <2024-01-01 Mon>
+      SCHEDULED: <2024-01-02 Tue>`,
+      },
+    ];
+
+    for (const test of tests) {
+      assertEquals(
+        converter.convert(test.input),
+        test.expected,
+        test.name,
+      );
+    }
+  });
+
+  await t.step("global filter", () => {
+    const converter = new MarkdownConverter({
+      globalFilterTag: "#task",
+    });
+
+    const tests = [
+      {
+        name: "removes global filter tag",
+        input: "- [ ] Task #task",
+        expected: "- TODO Task",
+      },
+      {
+        name: "removes global filter tag with surrounding content",
+        input: "- [ ] Before #task after",
+        expected: "- TODO Before after",
+      },
+      {
+        name: "doesn't remove partial tag matches",
+        input: "- [ ] Task #taskforce",
+        expected: "- TODO Task #taskforce",
+      },
+      {
+        name: "doesn't remove tag in middle of word",
+        input: "- [ ] Task something#task",
+        expected: "- TODO Task something#task",
+      },
+    ];
+
+    for (const test of tests) {
+      assertEquals(
+        converter.convert(test.input),
+        test.expected,
+        test.name,
+      );
+    }
+  });
+
+  await t.step("combined features", () => {
+    const converter = new MarkdownConverter({
+      globalFilterTag: "#task",
+      priorityMapping: {
+        "⏫": "A",
+        "🔼": "B",
+      },
+      convertDates: true,
+      createDateProperty: true,
+    });
+
+    const tests = [
+      {
+        name: "converts task with all features",
+        input: "  - [ ] ⏫ Important task #task 📅 2024-01-01 ➕ 2024-01-02",
+        expected: `  - TODO [#A] Important task
+    DEADLINE: <2024-01-01 Mon>
+    created:: [[2024-01-02]]`,
+      },
+      {
+        name: "converts completed task with all features",
+        input: "    - [x] 🔼 Done task #task ⏳ 2024-01-01",
+        expected: `    - DONE [#B] Done task
+      SCHEDULED: <2024-01-01 Mon>`,
+      },
+    ];
+
+    for (const test of tests) {
+      assertEquals(
+        converter.convert(test.input),
+        test.expected,
+        test.name,
+      );
+    }
+  });
+
+  await t.step("tasks with edge cases", () => {
+    const tests = [
+      {
+        name: "empty task with indentation",
+        input: "  - [ ]  ",
+        expected: "  - TODO",
+      },
+      {
+        name: "task with invalid status",
+        input: "- [?] Invalid status",
+        expected: "- [?] Invalid status",
+      },
+      {
+        name: "task with multiple priorities",
+        input: "- [ ] 🔺⏫ Double priority",
+        expected: "- TODO [#A] Double priority", // Take first priority
+      },
+    ];
+
+    for (const test of tests) {
+      assertEquals(
+        converter.convert(test.input),
+        test.expected,
+        test.name,
+      );
+    }
+  });
+});
+
 // Highlight Tests
 Deno.test("Highlights", async (t) => {
   await t.step("simple highlight", () => {
@@ -97,6 +374,35 @@ Deno.test("Wiki-links", async (t) => {
     const input = "- [ ] Check [[Page|Title]]";
     const expected = "- TODO Check [Title]([[Page]])";
     assertEquals(converter.convert(input), expected);
+  });
+
+  await t.step("wiki-link edge cases", () => {
+    const tests = [
+      {
+        name: "link with special characters",
+        input: "[[Page with #hash|Title]]",
+        expected: "[Title]([[Page with #hash]])",
+      },
+      // TODO: Fix these edge cases
+      // {
+      //   name: "link with nested brackets",
+      //   input: "[[Page [with] brackets|Title]]",
+      //   expected: "[Title]([[Page [with] brackets]])",
+      // },
+      // {
+      //   name: "link with multiple pipes",
+      //   input: "[[Page|Alias|Extra]]",
+      //   expected: "[Alias]([[Page]])", // Take first alias
+      // },
+    ];
+
+    for (const test of tests) {
+      assertEquals(
+        converter.convert(test.input),
+        test.expected,
+        test.name,
+      );
+    }
   });
 });
 
