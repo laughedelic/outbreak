@@ -1,5 +1,5 @@
 interface Chunk {
-  type: "heading" | "paragraph" | "list";
+  type: "properties" | "heading" | "paragraph" | "list";
   content: string;
   level: number;
 }
@@ -24,6 +24,13 @@ function splitIntoChunks(markdown: string): Chunk[] {
   }
 
   for (const line of lines) {
+    // If the first chunk is a properties block, pass through it and commit as-is
+    if (!chunks.length && line.match(/^\S+:: /)) {
+      currentType = "properties";
+      currentChunk.push(line);
+      continue;
+    }
+
     // Skip empty lines between chunks
     if (!line.trim()) {
       commitChunk();
@@ -73,6 +80,13 @@ function outlineChunks(
 
   for (let i = 0; i < chunks.length; i++) {
     const chunk = chunks[i];
+
+    if (chunk.type === "properties") {
+      lines.push(chunk.content);
+      // Add a blank line after the properties block
+      lines.push("");
+      continue;
+    }
 
     if (chunk.type === "heading") {
       // Adjust heading stack based on heading level

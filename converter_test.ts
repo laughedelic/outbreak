@@ -387,9 +387,9 @@ This is a sample content.
     `.trim();
 
     const expected = `
-- aliases:: buh, bar
-  description:: This is a text with a [[reference]] and a [link](https://example.com)
-  tags:: foo, words with spaces
+aliases:: buh, bar
+description:: This is a text with a [[reference]] and a [link](https://example.com)
+tags:: foo, words with spaces
 
 This is a sample content.
     `.trim();
@@ -409,8 +409,8 @@ This is a sample content.
     `.trim();
 
     const expected = `
-- title:: Sample Title
-  date:: 2023-10-01
+title:: Sample Title
+date:: 2023-10-01
 
 This is a sample content.
     `.trim();
@@ -420,7 +420,8 @@ This is a sample content.
 
   await t.step("no frontmatter", () => {
     const input = `
-This is a sample content without frontmatter.
+This is a sample content 
+without frontmatter.
     `.trim();
 
     const expected = input;

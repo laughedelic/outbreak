@@ -192,9 +192,8 @@ const convertFrontmatter: ConversionRule = {
     const properties: string[] = [];
 
     for (const [key, value] of Object.entries(parsedYaml)) {
-      const prefix = properties.length ? "  " : "- "; // TODO: spaces or tabs?
       const valueStr = Array.isArray(value) ? value.join(", ") : value;
-      properties.push(`${prefix}${key}:: ${valueStr}`);
+      properties.push(`${key}:: ${valueStr}`);
     }
 
     return content.replace(frontmatterRegex, `${properties.join("\n")}\n`);
