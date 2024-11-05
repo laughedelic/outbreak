@@ -243,6 +243,135 @@ Deno.test("Empty Elements", async (t) => {
   });
 });
 
+Deno.test("Numbered Lists", async (t) => {
+  await t.step("simple numbered list", () => {
+    const input = [
+      "1. one",
+      "2. two",
+      "3. three",
+    ].join("\n");
+
+    const expected = [
+      "- one",
+      "  logseq.order-list-type:: number",
+      "- two",
+      "  logseq.order-list-type:: number",
+      "- three",
+      "  logseq.order-list-type:: number",
+    ].join("\n");
+
+    assertEquals(converter.convert(input), expected);
+  });
+
+  await t.step("nested numbered list", () => {
+    const input = [
+      "- a",
+      "  1. a1",
+      "  2. a2",
+      "- b",
+      "  - c",
+      "    1. c1",
+      "    2. c2",
+    ].join("\n");
+
+    const expected = [
+      "- a",
+      "  - a1",
+      "    logseq.order-list-type:: number",
+      "  - a2",
+      "    logseq.order-list-type:: number",
+      "- b",
+      "  - c",
+      "    - c1",
+      "      logseq.order-list-type:: number",
+      "    - c2",
+      "      logseq.order-list-type:: number",
+    ].join("\n");
+
+    assertEquals(converter.convert(input), expected);
+  });
+
+  await t.step("numbered list with text", () => {
+    const input = [
+      "1. one",
+      "2. two",
+      "3. three",
+      "   and a half",
+    ].join("\n");
+
+    const expected = [
+      "- one",
+      "  logseq.order-list-type:: number",
+      "- two",
+      "  logseq.order-list-type:: number",
+      "- three",
+      "  logseq.order-list-type:: number",
+      "   and a half",
+    ].join("\n");
+
+    assertEquals(converter.convert(input), expected);
+  });
+
+  await t.step("mixed list types", () => {
+    const input = [
+      "- bullet",
+      "1. numbered",
+      "2. numbered",
+      "- bullet",
+    ].join("\n");
+
+    const expected = [
+      "- bullet",
+      "- numbered",
+      "  logseq.order-list-type:: number",
+      "- numbered",
+      "  logseq.order-list-type:: number",
+      "- bullet",
+    ].join("\n");
+
+    assertEquals(converter.convert(input), expected);
+  });
+
+  await t.step("numbered list with other content", () => {
+    const input = [
+      "1. item with ==highlight== and [[Page|alias]]",
+      "2. another item",
+    ].join("\n");
+
+    const expected = [
+      "- item with ^^highlight^^ and [alias]([[Page]])",
+      "  logseq.order-list-type:: number",
+      "- another item",
+      "  logseq.order-list-type:: number",
+    ].join("\n");
+
+    assertEquals(converter.convert(input), expected);
+  });
+
+  await t.step("numbered list with empty lines", () => {
+    const input = [
+      "1. one",
+      "",
+      "2. two",
+      "",
+      "3. three",
+    ].join("\n");
+
+    const expected = [
+      "- one",
+      "  logseq.order-list-type:: number",
+      "",
+      "- two",
+      "  logseq.order-list-type:: number",
+      "",
+      "- three",
+      "  logseq.order-list-type:: number",
+    ].join("\n");
+
+    assertEquals(converter.convert(input), expected);
+  });
+});
+
 Deno.test("Frontmatter Conversion", async (t) => {
   await t.step("basic frontmatter", () => {
     const input = `

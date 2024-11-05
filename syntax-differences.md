@@ -130,3 +130,31 @@ tip note
 	- <https://help.obsidian.md/Editing+and+formatting/Basic+formatting+syntax#Bold%2C+italics%2C+highlights>
 - Logseq: `Text with ^^a highlight^^ in the middle`
 	- <https://docs.logseq.com/#/page/markdown>
+
+### Numbered lists (ordered lists)
+
+- Obsidian: standard markdown syntax
+	- <https://help.obsidian.md/Editing+and+formatting/Basic+formatting+syntax#Lists>
+	- Note that the numbers don't matter for the rendering, so it's common to use `1.` for each item to be able to reorder items easily.
+
+```markdown
+1. one
+2. two
+3. three
+   and a half
+```
+
+- Logseq: numbered lists are the same as other bullet lists (i.e. generic blocks), but with a special hidden property: `logseq.order-list-type:: number`
+	- <https://docs.logseq.com/#/page/numbered%20list>
+	- there is also a community plugin for this: <https://github.com/sethyuan/logseq-plugin-ol/blob/master/README.en.md>
+	- Logseq figures out the numbering automatically (nice), but the internal syntax is just bizarre:
+
+```markdown
+- one
+  logseq.order-list-type:: number
+- two
+  logseq.order-list-type:: number
+- three
+  logseq.order-list-type:: number
+  and a half
+```

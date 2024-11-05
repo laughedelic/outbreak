@@ -224,7 +224,27 @@ const convertEmbeds: ConversionRule = {
   },
 };
 
-// TODO: a rule for numbered lists
+const convertNumberedLists: ConversionRule = {
+  name: "numberedLists",
+  convert: (content: string) => {
+    const lines = content.split("\n");
+    const convertedLines: string[] = [];
+
+    lines.forEach((line) => {
+      const match = line.match(/^(\s*)\d+\.\s+(.*)/);
+      if (match) {
+        const indent = match[1];
+        const text = match[2];
+        convertedLines.push(`${indent}- ${text}`);
+        convertedLines.push(`${indent}  logseq.order-list-type:: number`);
+      } else {
+        convertedLines.push(line);
+      }
+    });
+
+    return convertedLines.join("\n");
+  },
+};
 
 // Add the new rule to the rules array
 export class MarkdownConverter {
@@ -238,6 +258,7 @@ export class MarkdownConverter {
       convertTasks, // Then lists/tasks
       convertHighlights, // Then inline formatting
       convertWikiLinks, // Then links
+      convertNumberedLists, // Then numbered lists
       convertEmbeds, // Finally, process embeds
     ];
   }
