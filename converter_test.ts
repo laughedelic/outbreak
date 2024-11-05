@@ -448,6 +448,59 @@ Deno.test("Embeds", async (t) => {
   });
 });
 
+Deno.test("Quotes and Callouts", async (t) => {
+  await t.step("simple quote", () => {
+    const input = `
+> This is a quote.
+> Another line in the quote.
+`.trim();
+
+    const expected = `
+#+BEGIN_QUOTE
+This is a quote.
+Another line in the quote.
+#+END_QUOTE
+`.trim();
+
+    assertEquals(converter.convert(input), expected);
+  });
+
+  await t.step("simple callout", () => {
+    const input = `
+> [!note]
+> This is a note.
+> Another line in the note.
+`.trim();
+
+    const expected = `
+#+BEGIN_NOTE
+This is a note.
+Another line in the note.
+#+END_NOTE
+`.trim();
+
+    assertEquals(converter.convert(input), expected);
+  });
+
+  await t.step("callout with a title", () => {
+    const input = `
+> [!tip] Tip title
+> This is a tip.
+> Another line in the tip.
+`.trim();
+
+    const expected = `
+#+BEGIN_TIP
+Tip title
+This is a tip.
+Another line in the tip.
+#+END_TIP
+`.trim();
+
+    assertEquals(converter.convert(input), expected);
+  });
+});
+
 // Complex Cases
 Deno.test("Complex Cases", async (t) => {
   await t.step("mixed elements", () => {
@@ -489,6 +542,54 @@ Deno.test("Complex Cases", async (t) => {
       "Note with ^^highlight^^",
       "- TODO Task",
       "[alias]([[Page]])",
+      "#+END_NOTE",
+    ].join("\n");
+
+    assertEquals(converter.convert(input), expected);
+  });
+
+  await t.step("callout with blank lines", () => {
+    const input = [
+      "> [!note]",
+      ">  ",
+      "> Note with ==highlight==",
+      ">",
+      ">some text is not indented",
+    ].join("\n");
+
+    const expected = [
+      "#+BEGIN_NOTE",
+      "",
+      "Note with ^^highlight^^",
+      "",
+      "some text is not indented",
+      "#+END_NOTE",
+    ].join("\n");
+
+    assertEquals(converter.convert(input), expected);
+  });
+
+  await t.step("nested block elements", () => {
+    const input = [
+      "> [!note]",
+      "> Outer callout",
+      "> > [!warning]",
+      "> >Inner callout",
+      "> > > Regular quote",
+      "> >",
+      ">>inner callout continues",
+    ].join("\n");
+
+    const expected = [
+      "#+BEGIN_NOTE",
+      "Outer callout",
+      "#+BEGIN_WARNING",
+      "Inner callout",
+      "#+BEGIN_QUOTE",
+      "Regular quote",
+      "#+END_QUOTE",
+      "inner callout continues",
+      "#+END_WARNING",
       "#+END_NOTE",
     ].join("\n");
 

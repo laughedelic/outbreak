@@ -206,105 +206,65 @@ const convertTasks = (
   },
 });
 
-// TODO: refactor this as a case for callouts
-const convertBlockQuotes: ConversionRule = {
-  name: "blockquotes",
+const convertBlocks: ConversionRule = {
+  name: "blocks",
   convert: (content: string) => {
     const lines = content.split("\n");
     const converted: string[] = [];
-    let inQuote = false;
-    let quoteContent: string[] = [];
+    const blockLines: string[] = [];
+    let blockType: string | null = null;
 
-    for (let i = 0; i < lines.length; i++) {
-      const line = lines[i];
-      const isQuoteLine = line.startsWith("> ");
-
-      // Check if this is a callout
-      if (isQuoteLine && line.match(/^>\s*\[!.+?\]$/)) {
-        continue; // Skip callout lines - they'll be handled by convertCallouts
-      }
-
-      if (isQuoteLine && !inQuote) {
-        // Start new quote
-        inQuote = true;
-        quoteContent = [line.slice(2)];
-      } else if (isQuoteLine && inQuote) {
-        // Continue quote
-        quoteContent.push(line.slice(2));
-      } else if (!isQuoteLine && inQuote) {
-        // End quote
-        converted.push("#+BEGIN_QUOTE");
-        converted.push(...quoteContent);
-        converted.push("#+END_QUOTE");
-        converted.push(line);
-        inQuote = false;
-        quoteContent = [];
-      } else {
-        // Regular line
-        converted.push(line);
+    function closeBlock() {
+      // console.debug("<:", blockType, "\n");
+      if (blockType) {
+        // pass the block content recursively to handle nested blocks
+        const recurse = convertBlocks.convert(blockLines.join("\n"));
+        converted.push(recurse);
+        converted.push(`#+END_${blockType.toUpperCase()}`);
+        blockType = null;
+        // reset block lines
+        blockLines.length = 0;
       }
     }
 
-    // Handle case where file ends with a quote
-    if (inQuote) {
-      converted.push("#+BEGIN_QUOTE");
-      converted.push(...quoteContent);
-      converted.push("#+END_QUOTE");
-    }
+    for (const line of lines) {
+      const blockMatch = line.match(
+        /^>\s?(?<callout>\[!(?<type>\w+)\]\s?)?(?<text>.*)$/,
+      );
 
-    return converted.join("\n");
-  },
-};
-
-const convertCallouts: ConversionRule = {
-  name: "callouts",
-  convert: (content: string) => {
-    const lines = content.split("\n");
-    const converted: string[] = [];
-    let inCallout = false;
-    let calloutType = "";
-    let calloutContent: string[] = [];
-
-    for (let i = 0; i < lines.length; i++) {
-      const line = lines[i];
-      const calloutMatch = line.match(/^>\s*\[!(\w+)\]\s*$/);
-      const isCalloutContent = line.startsWith("> ");
-
-      if (calloutMatch) {
-        // Start new callout
-        if (inCallout) {
-          // Close previous callout
-          converted.push(`#+BEGIN_${calloutType.toUpperCase()}`);
-          converted.push(...calloutContent);
-          converted.push(`#+END_${calloutType.toUpperCase()}`);
+      if (blockMatch) {
+        const groups = blockMatch.groups;
+        if (!blockType) { // start a new block
+          blockType = groups?.callout ? groups.type : "QUOTE";
+          // console.debug(">:", blockType);
+          converted.push(`#+BEGIN_${blockType.toUpperCase()}`);
+          // callouts can have a title
+          if (groups?.text && blockType !== "QUOTE") {
+            // console.debug("T:", groups.text);
+            blockLines.push(groups.text.trimEnd());
+          }
         }
-        inCallout = true;
-        calloutType = calloutMatch[1];
-        calloutContent = [];
-      } else if (isCalloutContent && inCallout) {
-        // Continue callout
-        calloutContent.push(line.slice(2));
-      } else if (!isCalloutContent && inCallout) {
-        // End callout
-        converted.push(`#+BEGIN_${calloutType.toUpperCase()}`);
-        converted.push(...calloutContent);
-        converted.push(`#+END_${calloutType.toUpperCase()}`);
-        converted.push(line);
-        inCallout = false;
-        calloutType = "";
-        calloutContent = [];
-      } else {
-        // Regular line
-        converted.push(line);
+        if (
+          !groups?.callout && groups?.text !== undefined
+        ) {
+          // console.debug("I:", groups.text);
+          blockLines.push(groups.text.trimEnd());
+        }
+        continue;
       }
+
+      if (blockType && line.trim() === "") { // blank line ends the block
+        closeBlock();
+        continue;
+      }
+
+      // Regular line
+      // console.debug("R:", line);
+      converted.push(line);
     }
 
-    // Handle case where file ends with a callout
-    if (inCallout) {
-      converted.push(`#+BEGIN_${calloutType.toUpperCase()}`);
-      converted.push(...calloutContent);
-      converted.push(`#+END_${calloutType.toUpperCase()}`);
-    }
+    // Handle any remaining open blocks
+    closeBlock();
 
     return converted.join("\n");
   },
@@ -387,8 +347,7 @@ export class MarkdownConverter {
 
     this.rules = [
       convertFrontmatter, // Process frontmatter first
-      convertCallouts, // Process callouts next
-      convertBlockQuotes, // Then regular blockquotes
+      convertBlocks,
       convertTasks(finalConfig), // Then lists/tasks
       convertHighlights, // Then inline formatting
       convertWikiLinks, // Then links
