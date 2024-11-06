@@ -23,14 +23,7 @@ async function findMarkdownFiles(inputDir: string): Promise<string[]> {
   return markdownFiles;
 }
 
-async function processFile(
-  inputPath: string,
-  outputPath: string | null,
-  converter: MarkdownConverter,
-): Promise<void> {
-  // Read the input file
-  const content = await Deno.readTextFile(inputPath);
-
+export function fullConversion(content: string, converter: MarkdownConverter) {
   // First process frontmatter
   const { properties, body } = extractProperties(content);
 
@@ -49,6 +42,17 @@ async function processFile(
 
   // Reconstruct the final content
   const outlinedContent = propertiesBlock + outline;
+  return outlinedContent;
+}
+
+async function processFile(
+  inputPath: string,
+  outputPath: string | null,
+  converter: MarkdownConverter,
+): Promise<void> {
+  // Read the input file
+  const content = await Deno.readTextFile(inputPath);
+  const outlinedContent = await fullConversion(content, converter);
 
   if (outputPath) {
     // Ensure the output directory exists
@@ -76,7 +80,9 @@ export async function migrateVault(
   inputDir: string,
   outputDir: string | null = null,
 ) {
-  const converter = new MarkdownConverter();
+  const converter = new MarkdownConverter({
+    globalFilterTag: "#task",
+  });
 
   // Initialize spinner for file discovery
   const scanSpinner = new Spinner({
