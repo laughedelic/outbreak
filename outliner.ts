@@ -1,10 +1,10 @@
 interface Chunk {
-  type: "properties" | "heading" | "paragraph" | "list";
+  type: "frontmatter" | "heading" | "paragraph" | "list";
   content: string;
   level: number;
 }
 
-function splitIntoChunks(markdown: string): Chunk[] {
+export function splitIntoChunks(markdown: string): Chunk[] {
   const lines = markdown.trim().split("\n");
   const chunks: Chunk[] = [];
   let currentChunk: string[] = [];
@@ -24,10 +24,20 @@ function splitIntoChunks(markdown: string): Chunk[] {
   }
 
   for (const line of lines) {
-    // If the first chunk is a properties block, pass through it and commit as-is
-    if (!chunks.length && line.match(/^\S+:: /)) {
-      currentType = "properties";
-      currentChunk.push(line);
+    const frontmatterDelimiter = line.match(/^---$/);
+    // If the first chunk is a frontmatter block, pass through it and commit as-is
+    if (!chunks.length && frontmatterDelimiter) {
+      currentType = "frontmatter";
+      continue;
+    }
+
+    // If we're in a frontmatter block, keep adding lines until we hit the end
+    if (currentType === "frontmatter") {
+      if (frontmatterDelimiter) {
+        commitChunk();
+      } else {
+        currentChunk.push(line);
+      }
       continue;
     }
 
@@ -71,9 +81,13 @@ function splitIntoChunks(markdown: string): Chunk[] {
   return chunks;
 }
 
-function outlineChunks(
+export type OutlineOptions = {
+  listNesting: "none" | "paragraph" | "separate";
+};
+
+export function outlineChunks(
   chunks: Chunk[],
-  options: { listNesting: "none" | "paragraph" | "separate" },
+  options: OutlineOptions,
 ): string {
   const lines: string[] = [];
   const headingStack: number[] = [0];
@@ -81,9 +95,9 @@ function outlineChunks(
   for (let i = 0; i < chunks.length; i++) {
     const chunk = chunks[i];
 
-    if (chunk.type === "properties") {
+    if (chunk.type === "frontmatter") {
       lines.push(chunk.content);
-      // Add a blank line after the properties block
+      // Add a blank line after the frontmatter block
       lines.push("");
       continue;
     }
@@ -133,10 +147,26 @@ function outlineChunks(
 
 export function outlineMarkdown(
   markdown: string,
-  options: { listNesting: "none" | "paragraph" | "separate" } = {
+  options: OutlineOptions = {
     listNesting: "none",
   },
 ): string {
   const chunks = splitIntoChunks(markdown);
   return outlineChunks(chunks, options);
+}
+
+if (import.meta.main) { // CLI
+  const inputFile = Deno.args[0];
+  const outputFile = Deno.args[1];
+
+  if (!inputFile || !outputFile) {
+    console.log(
+      "Usage: deno run --allow-read --allow-write outliner.ts <input-file> <output-file>",
+    );
+    Deno.exit(1);
+  }
+
+  const content = await Deno.readTextFile(inputFile);
+  const outlined = outlineMarkdown(content, { listNesting: "paragraph" });
+  await Deno.writeTextFile(outputFile, outlined);
 }

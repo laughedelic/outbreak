@@ -206,6 +206,7 @@ const convertTasks = (
   },
 });
 
+// TODO: congifurable block types: https://docs.logseq.com/#/page/advanced%20commands
 const convertBlocks: ConversionRule = {
   name: "blocks",
   convert: (content: string) => {
@@ -229,7 +230,7 @@ const convertBlocks: ConversionRule = {
 
     for (const line of lines) {
       const blockMatch = line.match(
-        /^>\s?(?<callout>\[!(?<type>\w+)\]\s?)?(?<text>.*)$/,
+        /^>\s?(?<callout>\[!(?<type>\w+)\][+-]?\s?)?(?<text>.*)$/,
       );
 
       if (blockMatch) {
@@ -241,7 +242,7 @@ const convertBlocks: ConversionRule = {
           // callouts can have a title
           if (groups?.text && blockType !== "QUOTE") {
             // console.debug("T:", groups.text);
-            blockLines.push(groups.text.trimEnd());
+            blockLines.push(`**${groups.text.trimEnd()}**`);
           }
         }
         if (
@@ -270,26 +271,37 @@ const convertBlocks: ConversionRule = {
   },
 };
 
+export function extractProperties(
+  content: string,
+): { properties: string[]; body: string } {
+  const frontmatterRegex = /^---\n([\s\S]*?)\n---\n/;
+  const match = content.match(frontmatterRegex);
+
+  if (!match) return { properties: [], body: content };
+
+  const yamlContent = match[1];
+  const parsedYaml = yaml.parse(yamlContent, {
+    schema: "failsafe",
+  }) as Record<string, string | string[]>;
+  const properties: string[] = [];
+
+  for (const [key, value] of Object.entries(parsedYaml)) {
+    const valueStr = Array.isArray(value) ? value.join(", ") : value;
+    properties.push(`${key}:: ${valueStr}`);
+  }
+
+  const body = content.replace(frontmatterRegex, "");
+  return { properties, body };
+}
+
 const convertFrontmatter: ConversionRule = {
   name: "frontmatter",
   convert: (content: string) => {
-    const frontmatterRegex = /^---\n([\s\S]*?)\n---\n/;
-    const match = content.match(frontmatterRegex);
+    const { properties, body } = extractProperties(content);
+    if (!properties.length) return body;
 
-    if (!match) return content;
-
-    const yamlContent = match[1];
-    const parsedYaml = yaml.parse(yamlContent, {
-      schema: "failsafe",
-    }) as Record<string, string | string[]>;
-    const properties: string[] = [];
-
-    for (const [key, value] of Object.entries(parsedYaml)) {
-      const valueStr = Array.isArray(value) ? value.join(", ") : value;
-      properties.push(`${key}:: ${valueStr}`);
-    }
-
-    return content.replace(frontmatterRegex, `${properties.join("\n")}\n`);
+    const propertiesBlock = properties.join("\n");
+    return [propertiesBlock, body].join("\n");
   },
 };
 
@@ -361,8 +373,7 @@ export class MarkdownConverter {
   }
 }
 
-// CLI handler remains the same
-if (import.meta.main) {
+if (import.meta.main) { // CLI
   const inputFile = Deno.args[0];
   const outputFile = Deno.args[1];
 

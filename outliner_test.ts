@@ -88,10 +88,6 @@ h4 paragraph out of order
 
   await t.step("should handle multiline lists", () => {
     const input = `
-- prop:: value
-  tags:: tag1, tag2
-  title:: Title
-
 paragraph
 
 - a list
@@ -105,9 +101,6 @@ another paragraph
 `.trim();
 
     const expectedOutput = `
-- prop:: value
-  tags:: tag1, tag2
-  title:: Title
 - paragraph
 - a list
   of items

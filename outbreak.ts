@@ -5,8 +5,8 @@ import { sprintf } from "jsr:@std/fmt/printf";
 import { dim, green, red, yellow } from "jsr:@std/fmt/colors";
 import { Spinner } from "jsr:@std/cli/unstable-spinner";
 
-import { MarkdownConverter } from "./converter.ts";
-import { outlineMarkdown } from "./outliner.ts";
+import { extractProperties, MarkdownConverter } from "./converter.ts";
+import { outlineChunks, splitIntoChunks } from "./outliner.ts";
 
 async function findMarkdownFiles(inputDir: string): Promise<string[]> {
   const markdownFiles: string[] = [];
@@ -31,13 +31,24 @@ async function processFile(
   // Read the input file
   const content = await Deno.readTextFile(inputPath);
 
-  // First convert the markup
-  const convertedContent = converter.convert(content);
+  // First process frontmatter
+  const { properties, body } = extractProperties(content);
 
-  // Then transform the structure
-  const outlinedContent = outlineMarkdown(convertedContent, {
-    listNesting: "paragraph",
+  const propertiesBlock = properties.length
+    ? properties.join("\n") + "\n\n"
+    : "";
+
+  // Then split the body into chunks and apply conversion
+  const chunks = splitIntoChunks(body).map((chunk) => {
+    const converted = converter.convert(chunk.content);
+    return { ...chunk, content: converted };
   });
+
+  // Now outline converted chunks
+  const outline = outlineChunks(chunks, { listNesting: "paragraph" });
+
+  // Reconstruct the final content
+  const outlinedContent = propertiesBlock + outline;
 
   if (outputPath) {
     // Ensure the output directory exists

@@ -491,7 +491,7 @@ Another line in the note.
 
     const expected = `
 #+BEGIN_TIP
-Tip title
+**Tip title**
 This is a tip.
 Another line in the tip.
 #+END_TIP
