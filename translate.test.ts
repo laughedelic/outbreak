@@ -1,7 +1,5 @@
 import { assertEquals } from "jsr:@std/assert";
-import { MarkdownConverter } from "./converter.ts";
-
-const converter = new MarkdownConverter();
+import { translate, TranslationConfig } from "./translate.ts";
 
 // Task Tests
 Deno.test("Tasks", async (t) => {
@@ -20,7 +18,7 @@ Deno.test("Tasks", async (t) => {
       "- CANCELLED Cancelled",
     ].join("\n");
 
-    assertEquals(converter.convert(input), expected);
+    assertEquals(translate(input), expected);
   });
 
   await t.step("nested tasks", () => {
@@ -36,20 +34,18 @@ Deno.test("Tasks", async (t) => {
       "    - TODO Grandchild task",
     ].join("\n");
 
-    assertEquals(converter.convert(input), expected);
+    assertEquals(translate(input), expected);
   });
 
   await t.step("task with other content", () => {
     const input = "- [ ] Task with ==highlight== and [[Page|alias]]";
     const expected = "- TODO Task with ^^highlight^^ and [alias]([[Page]])";
-    assertEquals(converter.convert(input), expected);
+    assertEquals(translate(input), expected);
   });
 });
 
 Deno.test("Task advanced features", async (t) => {
   await t.step("basic task statuses", () => {
-    const converter = new MarkdownConverter();
-
     const tests = [
       {
         name: "converts empty checkbox to TODO",
@@ -75,7 +71,7 @@ Deno.test("Task advanced features", async (t) => {
 
     for (const test of tests) {
       assertEquals(
-        converter.convert(test.input),
+        translate(test.input),
         test.expected,
         test.name,
       );
@@ -83,16 +79,18 @@ Deno.test("Task advanced features", async (t) => {
   });
 
   await t.step("task priorities", () => {
-    const converter = new MarkdownConverter({
-      priorityMapping: {
-        "🔺": "A",
-        "⏫": "A",
-        "🔼": "B",
-        "🔽": "C",
-        "⏬": "C",
-        "💪": "B", // Custom mapping
+    const config: TranslationConfig = {
+      tasks: {
+        priorityMapping: {
+          "🔺": "A",
+          "⏫": "A",
+          "🔼": "B",
+          "🔽": "C",
+          "⏬": "C",
+          "💪": "B", // Custom mapping
+        },
       },
-    });
+    };
 
     const tests = [
       {
@@ -134,7 +132,7 @@ Deno.test("Task advanced features", async (t) => {
 
     for (const test of tests) {
       assertEquals(
-        converter.convert(test.input),
+        translate(test.input, config),
         test.expected,
         test.name,
       );
@@ -142,10 +140,12 @@ Deno.test("Task advanced features", async (t) => {
   });
 
   await t.step("task dates", () => {
-    const converter = new MarkdownConverter({
-      convertDates: true,
-      createDateProperty: true,
-    });
+    const config: TranslationConfig = {
+      tasks: {
+        convertDates: true,
+        createDateProperty: true,
+      },
+    };
 
     const tests = [
       {
@@ -183,7 +183,7 @@ Deno.test("Task advanced features", async (t) => {
 
     for (const test of tests) {
       assertEquals(
-        converter.convert(test.input),
+        translate(test.input, config),
         test.expected,
         test.name,
       );
@@ -191,10 +191,12 @@ Deno.test("Task advanced features", async (t) => {
   });
 
   await t.step("indentation", () => {
-    const converter = new MarkdownConverter({
-      convertDates: true,
-      createDateProperty: true,
-    });
+    const config: TranslationConfig = {
+      tasks: {
+        convertDates: true,
+        createDateProperty: true,
+      },
+    };
 
     const tests = [
       {
@@ -214,7 +216,7 @@ Deno.test("Task advanced features", async (t) => {
 
     for (const test of tests) {
       assertEquals(
-        converter.convert(test.input),
+        translate(test.input, config),
         test.expected,
         test.name,
       );
@@ -222,9 +224,11 @@ Deno.test("Task advanced features", async (t) => {
   });
 
   await t.step("global filter", () => {
-    const converter = new MarkdownConverter({
-      globalFilterTag: "#task",
-    });
+    const config: TranslationConfig = {
+      tasks: {
+        globalFilterTag: "#task",
+      },
+    };
 
     const tests = [
       {
@@ -251,7 +255,7 @@ Deno.test("Task advanced features", async (t) => {
 
     for (const test of tests) {
       assertEquals(
-        converter.convert(test.input),
+        translate(test.input, config),
         test.expected,
         test.name,
       );
@@ -259,15 +263,17 @@ Deno.test("Task advanced features", async (t) => {
   });
 
   await t.step("combined features", () => {
-    const converter = new MarkdownConverter({
-      globalFilterTag: "#task",
-      priorityMapping: {
-        "⏫": "A",
-        "🔼": "B",
+    const config: TranslationConfig = {
+      tasks: {
+        globalFilterTag: "#task",
+        priorityMapping: {
+          "⏫": "A",
+          "🔼": "B",
+        },
+        convertDates: true,
+        createDateProperty: true,
       },
-      convertDates: true,
-      createDateProperty: true,
-    });
+    };
 
     const tests = [
       {
@@ -287,7 +293,7 @@ Deno.test("Task advanced features", async (t) => {
 
     for (const test of tests) {
       assertEquals(
-        converter.convert(test.input),
+        translate(test.input, config),
         test.expected,
         test.name,
       );
@@ -315,7 +321,7 @@ Deno.test("Task advanced features", async (t) => {
 
     for (const test of tests) {
       assertEquals(
-        converter.convert(test.input),
+        translate(test.input),
         test.expected,
         test.name,
       );
@@ -328,25 +334,25 @@ Deno.test("Highlights", async (t) => {
   await t.step("simple highlight", () => {
     const input = "Text with ==highlighted== words";
     const expected = "Text with ^^highlighted^^ words";
-    assertEquals(converter.convert(input), expected);
+    assertEquals(translate(input), expected);
   });
 
   await t.step("multiple highlights", () => {
     const input = "Text with ==multiple== ==highlights== here";
     const expected = "Text with ^^multiple^^ ^^highlights^^ here";
-    assertEquals(converter.convert(input), expected);
+    assertEquals(translate(input), expected);
   });
 
   await t.step("nested formatting", () => {
     const input = "==highlight with **bold** inside==";
     const expected = "^^highlight with **bold** inside^^";
-    assertEquals(converter.convert(input), expected);
+    assertEquals(translate(input), expected);
   });
 
   await t.step("multiline highlight", () => {
     const input = "==highlight\nspanning\nlines==";
     const expected = "^^highlight\nspanning\nlines^^";
-    assertEquals(converter.convert(input), expected);
+    assertEquals(translate(input), expected);
   });
 });
 
@@ -355,25 +361,25 @@ Deno.test("Wiki-links", async (t) => {
   await t.step("simple alias", () => {
     const input = "[[Page Name|Custom Title]]";
     const expected = "[Custom Title]([[Page Name]])";
-    assertEquals(converter.convert(input), expected);
+    assertEquals(translate(input), expected);
   });
 
   await t.step("multiple aliases in text", () => {
     const input = "See [[Page 1|Title 1]] and [[Page 2|Title 2]]";
     const expected = "See [Title 1]([[Page 1]]) and [Title 2]([[Page 2]])";
-    assertEquals(converter.convert(input), expected);
+    assertEquals(translate(input), expected);
   });
 
   await t.step("link with special characters", () => {
     const input = "[[Page/With/Path|Custom Title]]";
     const expected = "[Custom Title]([[Page/With/Path]])";
-    assertEquals(converter.convert(input), expected);
+    assertEquals(translate(input), expected);
   });
 
   await t.step("nested within task", () => {
     const input = "- [ ] Check [[Page|Title]]";
     const expected = "- TODO Check [Title]([[Page]])";
-    assertEquals(converter.convert(input), expected);
+    assertEquals(translate(input), expected);
   });
 
   await t.step("wiki-link edge cases", () => {
@@ -398,7 +404,7 @@ Deno.test("Wiki-links", async (t) => {
 
     for (const test of tests) {
       assertEquals(
-        converter.convert(test.input),
+        translate(test.input),
         test.expected,
         test.name,
       );
@@ -411,26 +417,26 @@ Deno.test("Embeds", async (t) => {
   await t.step("simple embed", () => {
     const input = "Check this embed: ![[Page]]";
     const expected = "Check this embed: {{embed [[Page]]}}";
-    assertEquals(converter.convert(input), expected);
+    assertEquals(translate(input), expected);
   });
 
   await t.step("embed with path", () => {
     const input = "Embed with path: ![[path/to/Page]]";
     const expected = "Embed with path: {{embed [[path/to/Page]]}}";
-    assertEquals(converter.convert(input), expected);
+    assertEquals(translate(input), expected);
   });
 
   await t.step("multiple embeds", () => {
     const input = "Multiple embeds: ![[Page1]] and ![[Page2]]";
     const expected =
       "Multiple embeds: {{embed [[Page1]]}} and {{embed [[Page2]]}}";
-    assertEquals(converter.convert(input), expected);
+    assertEquals(translate(input), expected);
   });
 
   await t.step("embed within task", () => {
     const input = "- [ ] Check this embed: ![[Page]]";
     const expected = "- TODO Check this embed: {{embed [[Page]]}}";
-    assertEquals(converter.convert(input), expected);
+    assertEquals(translate(input), expected);
   });
 
   await t.step("YouTube video embed", () => {
@@ -438,13 +444,13 @@ Deno.test("Embeds", async (t) => {
       "Watch this video: ![Video](https://www.youtube.com/watch?v=yu27PWzJI_Y)";
     const expected =
       "Watch this video: {{video https://www.youtube.com/watch?v=yu27PWzJI_Y}}";
-    assertEquals(converter.convert(input), expected);
+    assertEquals(translate(input), expected);
   });
 
   await t.step("Vimeo video embed", () => {
     const input = "Watch this video: ![Video](https://vimeo.com/123456789)";
     const expected = "Watch this video: {{video https://vimeo.com/123456789}}";
-    assertEquals(converter.convert(input), expected);
+    assertEquals(translate(input), expected);
   });
 });
 
@@ -462,7 +468,7 @@ Another line in the quote.
 #+END_QUOTE
 `.trim();
 
-    assertEquals(converter.convert(input), expected);
+    assertEquals(translate(input), expected);
   });
 
   await t.step("simple callout", () => {
@@ -479,7 +485,7 @@ Another line in the note.
 #+END_NOTE
 `.trim();
 
-    assertEquals(converter.convert(input), expected);
+    assertEquals(translate(input), expected);
   });
 
   await t.step("callout with a title", () => {
@@ -497,7 +503,7 @@ Another line in the tip.
 #+END_TIP
 `.trim();
 
-    assertEquals(converter.convert(input), expected);
+    assertEquals(translate(input), expected);
   });
 });
 
@@ -506,7 +512,7 @@ Deno.test("Complex Cases", async (t) => {
   await t.step("mixed elements", () => {
     const input = "- [ ] Task with ==highlight== and [[Page|alias]]";
     const expected = "- TODO Task with ^^highlight^^ and [alias]([[Page]])";
-    assertEquals(converter.convert(input), expected);
+    assertEquals(translate(input), expected);
   });
 
   await t.step("nested within quote", () => {
@@ -526,7 +532,7 @@ Deno.test("Complex Cases", async (t) => {
       "#+END_QUOTE",
     ].join("\n");
 
-    assertEquals(converter.convert(input), expected);
+    assertEquals(translate(input), expected);
   });
 
   await t.step("callout with content", () => {
@@ -545,7 +551,7 @@ Deno.test("Complex Cases", async (t) => {
       "#+END_NOTE",
     ].join("\n");
 
-    assertEquals(converter.convert(input), expected);
+    assertEquals(translate(input), expected);
   });
 
   await t.step("callout with blank lines", () => {
@@ -566,7 +572,7 @@ Deno.test("Complex Cases", async (t) => {
       "#+END_NOTE",
     ].join("\n");
 
-    assertEquals(converter.convert(input), expected);
+    assertEquals(translate(input), expected);
   });
 
   await t.step("nested block elements", () => {
@@ -593,7 +599,7 @@ Deno.test("Complex Cases", async (t) => {
       "#+END_NOTE",
     ].join("\n");
 
-    assertEquals(converter.convert(input), expected);
+    assertEquals(translate(input), expected);
   });
 });
 
@@ -602,25 +608,25 @@ Deno.test("Edge Cases", async (t) => {
   await t.step("unterminated highlight", () => {
     const input = "Text with ==unterminated highlight";
     const expected = "Text with ==unterminated highlight";
-    assertEquals(converter.convert(input), expected);
+    assertEquals(translate(input), expected);
   });
 
   await t.step("unterminated wiki-link", () => {
     const input = "Text with [[Page|unterminated alias";
     const expected = "Text with [[Page|unterminated alias";
-    assertEquals(converter.convert(input), expected);
+    assertEquals(translate(input), expected);
   });
 
   await t.step("escaped characters", () => {
     const input = "Text with \\==not a highlight== and \\[[not a link]]";
     const expected = "Text with \\==not a highlight== and \\[[not a link]]";
-    assertEquals(converter.convert(input), expected);
+    assertEquals(translate(input), expected);
   });
 
   await t.step("no text before tasks", () => {
     const input = "Text before - [ ]";
     const expected = input;
-    assertEquals(converter.convert(input), expected);
+    assertEquals(translate(input), expected);
   });
 });
 
@@ -628,25 +634,25 @@ Deno.test("Empty Elements", async (t) => {
   await t.step("empty highlights", () => {
     const input = "====";
     const expected = "^^^^";
-    assertEquals(converter.convert(input), expected);
+    assertEquals(translate(input), expected);
   });
 
   await t.step("empty wiki links", () => {
     const input = "[[|]]";
     const expected = "[[|]]"; // Should be preserved as-is
-    assertEquals(converter.convert(input), expected);
+    assertEquals(translate(input), expected);
   });
 
   await t.step("empty tasks", () => {
     const input = "- [ ]";
     const expected = "- TODO";
-    assertEquals(converter.convert(input), expected);
+    assertEquals(translate(input), expected);
   });
 
   await t.step("mixed empty elements", () => {
     const input = "==== and [[|]]";
     const expected = "^^^^ and [[|]]";
-    assertEquals(converter.convert(input), expected);
+    assertEquals(translate(input), expected);
   });
 });
 
@@ -667,7 +673,7 @@ Deno.test("Numbered Lists", async (t) => {
       "  logseq.order-list-type:: number",
     ].join("\n");
 
-    assertEquals(converter.convert(input), expected);
+    assertEquals(translate(input), expected);
   });
 
   await t.step("nested numbered list", () => {
@@ -695,7 +701,7 @@ Deno.test("Numbered Lists", async (t) => {
       "      logseq.order-list-type:: number",
     ].join("\n");
 
-    assertEquals(converter.convert(input), expected);
+    assertEquals(translate(input), expected);
   });
 
   await t.step("numbered list with text", () => {
@@ -716,7 +722,7 @@ Deno.test("Numbered Lists", async (t) => {
       "   and a half",
     ].join("\n");
 
-    assertEquals(converter.convert(input), expected);
+    assertEquals(translate(input), expected);
   });
 
   await t.step("mixed list types", () => {
@@ -736,7 +742,7 @@ Deno.test("Numbered Lists", async (t) => {
       "- bullet",
     ].join("\n");
 
-    assertEquals(converter.convert(input), expected);
+    assertEquals(translate(input), expected);
   });
 
   await t.step("numbered list with other content", () => {
@@ -752,7 +758,7 @@ Deno.test("Numbered Lists", async (t) => {
       "  logseq.order-list-type:: number",
     ].join("\n");
 
-    assertEquals(converter.convert(input), expected);
+    assertEquals(translate(input), expected);
   });
 
   await t.step("numbered list with empty lines", () => {
@@ -775,7 +781,7 @@ Deno.test("Numbered Lists", async (t) => {
       "  logseq.order-list-type:: number",
     ].join("\n");
 
-    assertEquals(converter.convert(input), expected);
+    assertEquals(translate(input), expected);
   });
 });
 
@@ -801,7 +807,7 @@ tags:: foo, words with spaces
 This is a sample content.
     `.trim();
 
-    assertEquals(converter.convert(input), expected);
+    assertEquals(translate(input), expected);
   });
 
   await t.step("frontmatter with single values", () => {
@@ -822,7 +828,7 @@ date:: 2023-10-01
 This is a sample content.
     `.trim();
 
-    assertEquals(converter.convert(input), expected);
+    assertEquals(translate(input), expected);
   });
 
   await t.step("no frontmatter", () => {
@@ -833,6 +839,6 @@ without frontmatter.
 
     const expected = input;
 
-    assertEquals(converter.convert(input), expected);
+    assertEquals(translate(input), expected);
   });
 });

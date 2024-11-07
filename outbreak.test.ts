@@ -1,6 +1,5 @@
 import { assertEquals } from "jsr:@std/assert";
-import { fullConversion } from "./outbreak.ts";
-import { MarkdownConverter } from "./converter.ts";
+import { markdownToLogseq } from "./outbreak.ts";
 
 Deno.test("Comprehensive test", async (t) => {
   await t.step("full document", () => {
@@ -101,9 +100,6 @@ tags:: test, example
       \`\`\`
       `.trim();
 
-    const converter = new MarkdownConverter({
-      globalFilterTag: "#task",
-    });
-    assertEquals(fullConversion(input, converter), expected);
+    assertEquals(markdownToLogseq(input), expected);
   });
 });

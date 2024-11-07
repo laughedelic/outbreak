@@ -46,7 +46,7 @@ const TaskPriorityMapping: Record<string, TaskPriority> = {
 };
 
 // Types at the top of the file
-type TasksConfig = {
+export type TasksConfig = {
   globalFilterTag?: string;
   priorityMapping: Record<string, TaskPriority>;
   convertDates: boolean;
@@ -54,10 +54,19 @@ type TasksConfig = {
 };
 
 // Default configuration
-const DEFAULT_TASKS_CONFIG: TasksConfig = {
+const defaultTasksConfig: TasksConfig = {
+  globalFilterTag: "#task",
   priorityMapping: TaskPriorityMapping,
   convertDates: true,
   createDateProperty: false,
+};
+
+export type TranslationConfig = {
+  tasks?: Partial<TasksConfig>;
+};
+
+const defaultTranslationConfig: TranslationConfig = {
+  tasks: defaultTasksConfig,
 };
 
 // Helper to format dates with day names
@@ -124,10 +133,12 @@ const convertWikiLinks: ConversionRule = {
 
 // Modified task conversion rule
 const convertTasks = (
-  config: TasksConfig = DEFAULT_TASKS_CONFIG,
+  config?: Partial<TasksConfig>,
 ): ConversionRule => ({
   name: "tasks",
   convert: (content: string) => {
+    const conf = { ...defaultTasksConfig, ...config };
+
     const taskRegex = /^(\s*)- \[([ x\/\-])\](.*?)$/gm;
     return content.replace(
       taskRegex,
@@ -137,7 +148,7 @@ const convertTasks = (
         let taskText = text;
 
         // Extract and remove dates if enabled
-        if (config.convertDates) {
+        if (conf.convertDates) {
           const dateRegex = /(📅|⏳|🛫|➕|✅|❌)\s*(\d{4}-\d{2}-\d{2})/g;
           let dateMatch;
 
@@ -155,7 +166,7 @@ const convertTasks = (
         let priority = "";
         for (
           const [emoji, logseqPriority] of Object.entries(
-            config.priorityMapping,
+            conf.priorityMapping,
           )
         ) {
           if (taskText.includes(emoji)) {
@@ -165,9 +176,9 @@ const convertTasks = (
         }
 
         // Remove global filter tag if configured
-        if (config.globalFilterTag) {
+        if (conf.globalFilterTag) {
           taskText = taskText.replace(
-            new RegExp(` ${config.globalFilterTag}\\b`),
+            new RegExp(` ${conf.globalFilterTag}\\b`),
             "",
           );
         }
@@ -192,7 +203,7 @@ const convertTasks = (
               lines.push(`${indent}  SCHEDULED: <${formattedDate}>`);
               break;
             case "created":
-              if (config.createDateProperty) {
+              if (conf.createDateProperty) {
                 lines.push(`${indent}  created:: [[${date}]]`);
               }
               break;
@@ -376,27 +387,24 @@ const convertNumberedLists: ConversionRule = {
   },
 };
 
-// Add the new rule to the rules array
-export class MarkdownConverter {
-  private rules: ConversionRule[];
+export function translate(
+  content: string,
+  config?: Partial<TranslationConfig>,
+): string {
+  // deep merge the configuration with defaults
+  const conf = { ...defaultTranslationConfig, ...config };
 
-  constructor(config?: Partial<TasksConfig>) {
-    const finalConfig = { ...DEFAULT_TASKS_CONFIG, ...config };
+  const rules: ConversionRule[] = [
+    convertFrontmatter,
+    convertBlocks,
+    convertTasks(conf.tasks),
+    convertHighlights,
+    convertWikiLinks,
+    convertNumberedLists,
+    convertEmbeds,
+  ];
 
-    this.rules = [
-      convertFrontmatter, // Process frontmatter first
-      convertBlocks,
-      convertTasks(finalConfig), // Then lists/tasks
-      convertHighlights, // Then inline formatting
-      convertWikiLinks, // Then links
-      convertNumberedLists, // Then numbered lists
-      convertEmbeds, // Finally, process embeds
-    ];
-  }
-
-  convert(content: string): string {
-    return this.rules.reduce((text, rule) => rule.convert(text), content);
-  }
+  return rules.reduce((text, rule) => rule.convert(text), content);
 }
 
 if (import.meta.main) { // CLI
@@ -411,7 +419,6 @@ if (import.meta.main) { // CLI
   }
 
   const content = await Deno.readTextFile(inputFile);
-  const converter = new MarkdownConverter();
-  const converted = converter.convert(content);
+  const converted = translate(content);
   await Deno.writeTextFile(outputFile, converted);
 }
