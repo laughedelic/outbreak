@@ -32,9 +32,8 @@ interface MigrationConfig {
 
 interface MigrationPlan {
   source: string;
-  destination: string;
-  type: "journal" | "asset" | "page";
-  action: "move" | "rename";
+  newName: string;
+  type: "journals" | "assets" | "pages";
   message?: string;
 }
 
@@ -123,9 +122,8 @@ function planFileMigration(
 
     return {
       source: inputPath,
-      destination: join(outputDir, "journals", `${reformattedDate}.md`),
-      type: "journal",
-      action: parsedDate.isValid() ? "rename" : "move",
+      newName: join(outputDir, "journals", `${reformattedDate}.md`),
+      type: "journals",
       message: parsedDate.isValid()
         ? undefined
         : yellow("⚠️  Could not parse as a date"),
@@ -136,22 +134,20 @@ function planFileMigration(
   if (isAsset(relativePath, obsidianAppConfig)) {
     return {
       source: inputPath,
-      destination: join(outputDir, "assets", basename(relativePath)),
-      type: "asset",
-      action: "move",
+      newName: join(outputDir, "assets", basename(relativePath)),
+      type: "assets",
     };
   }
 
   // Handle regular pages
   return {
     source: inputPath,
-    destination: join(
+    newName: join(
       outputDir,
       "pages",
       newPageName(relativePath, config.useNamespaces),
     ),
-    type: "page",
-    action: config.useNamespaces ? "rename" : "move",
+    type: "pages",
   };
 }
 
@@ -162,38 +158,44 @@ function printMigrationPlan(
   outputDir: string,
 ): void {
   const counts = {
-    journal: 0,
-    asset: 0,
-    page: 0,
+    journals: 0,
+    assets: 0,
+    pages: 0,
+    warnings: 0,
   };
 
   console.log("\n📋 Migration Plan:");
 
+  function sourceColor(t: string) {
+    return t === "journals" ? blue : t === "assets" ? cyan : green;
+  }
+
   for (const plan of plans) {
     counts[plan.type]++;
-    const arrow = plan.action === "move" ? "->" : "~>";
-    const sourceColor = plan.type === "journal"
-      ? blue
-      : plan.type === "asset"
-      ? cyan
-      : green;
+    if (plan.message) counts.warnings++;
 
     const logEntry = [
-      // `${plan.type}:`,
-      sourceColor(relative(inputDir, plan.source)),
-      // "\n" + " ".repeat(plan.type.length - 2),
-      "\n",
-      arrow,
-      dim(relative(outputDir, plan.destination)),
+      sourceColor(plan.type)(relative(inputDir, plan.source)),
+      "\n   ",
+      dim(relative(outputDir, plan.newName)),
       plan.message ? plan.message : "",
     ].join(" ");
     console.log(logEntry);
   }
 
   console.log("\nSummary:");
-  console.log(blue(`📅 ${counts.journal.toString()} journals`));
-  console.log(cyan(`📎 ${counts.asset.toString()} assets`));
-  console.log(green(`📝 ${counts.page.toString()} pages`));
+  console.log(sourceColor("journals")(`📅 ${counts.journals} journals`));
+  console.log(sourceColor("assets")(`📎 ${counts.assets} assets`));
+  console.log(sourceColor("pages")(`📝 ${counts.pages} pages`));
+
+  if (counts.warnings > 0) {
+    console.log("\nWarnings:");
+    console.log(
+      yellow(
+        `⚠️  ${counts.warnings} files could not be parsed as dates (see above)`,
+      ),
+    );
+  }
 }
 
 // Function to execute migration plan
@@ -219,16 +221,16 @@ async function executeMigrationPlan(
     );
 
     // Ensure destination directory exists
-    await Deno.mkdir(dirname(plan.destination), { recursive: true });
+    await Deno.mkdir(dirname(plan.newName), { recursive: true });
 
-    if (plan.type === "asset") {
+    if (plan.type === "assets") {
       // Simple copy for assets
-      await Deno.copyFile(plan.source, plan.destination);
+      await Deno.copyFile(plan.source, plan.newName);
     } else {
       // Process markdown files
       const content = await Deno.readTextFile(plan.source);
       const convertedContent = await fullConversion(content, converter);
-      await Deno.writeTextFile(plan.destination, convertedContent);
+      await Deno.writeTextFile(plan.newName, convertedContent);
     }
 
     processed++;
@@ -241,7 +243,7 @@ const defaultConfig: MigrationConfig = {
   useNamespaces: false,
   journalDateFormat: "YYYY-MM-DD",
   ignoredPaths: [
-    "archive/**",
+    // "archive/**",
     ".*/**", // any hidden directories in the root
     "**/.*", // hidden files (anywhere)
   ],
