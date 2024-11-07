@@ -19,6 +19,7 @@ interface ObsidianAppConfig {
 interface MigrationConfig {
   useNamespaces: boolean;
   journalDateFormat: string;
+  ignoredPaths?: string[];
   dryRun: boolean;
 }
 
@@ -167,13 +168,14 @@ function printMigrationPlan(
     const sourceColor = plan.type === "journal"
       ? blue
       : plan.type === "asset"
-      ? yellow
+      ? cyan
       : green;
 
     const logEntry = [
-      `${plan.type}:`,
+      // `${plan.type}:`,
       sourceColor(relative(inputDir, plan.source)),
-      "\n" + " ".repeat(plan.type.length - 2),
+      // "\n" + " ".repeat(plan.type.length - 2),
+      "\n",
       arrow,
       dim(relative(outputDir, plan.destination)),
       plan.message ? plan.message : "",
@@ -182,9 +184,9 @@ function printMigrationPlan(
   }
 
   console.log("\nSummary:");
-  console.log(`📅 ${blue(counts.journal.toString())} daily notes`);
-  console.log(`📎 ${yellow(counts.asset.toString())} assets`);
-  console.log(`📝 ${green(counts.page.toString())} pages`);
+  console.log(blue(`📅 ${counts.journal.toString()} journals`));
+  console.log(cyan(`📎 ${counts.asset.toString()} assets`));
+  console.log(green(`📝 ${counts.page.toString()} pages`));
 }
 
 // Function to execute migration plan
@@ -236,6 +238,7 @@ export async function migrateVault(
   const config: MigrationConfig = {
     useNamespaces: false,
     journalDateFormat: "YYYY-MM-DD",
+    ignoredPaths: [".obsidian", ".git", ".vscode", ".trash"],
     dryRun: false,
     ...options,
   };
@@ -253,15 +256,20 @@ export async function migrateVault(
 
   // Read Obsidian configuration
   const dailyNotesConfig = await readDailyNotesConfig(inputDir);
-  console.log(
-    `📅 Daily notes config: ${JSON.stringify(dailyNotesConfig)}`,
-  );
+  const obsidianAppConfig = await readObsidianAppConfig(inputDir);
 
   // Find all files
   const files: string[] = [];
+  const ignored: Record<string, number> = {};
   for await (const entry of walk(inputDir, { includeDirs: false })) {
-    // Skip .obsidian directory
-    if (entry.path.includes("/.obsidian/")) continue;
+    // Skip ignored paths
+    const ignoredPath = config.ignoredPaths?.find((path) =>
+      entry.path.includes(path)
+    );
+    if (ignoredPath) {
+      ignored[ignoredPath] = (ignored[ignoredPath] || 0) + 1;
+      continue;
+    }
     files.push(entry.path);
   }
 
@@ -276,11 +284,23 @@ export async function migrateVault(
 
   // Create migration plans for all files
   const plans = files.map((file) =>
-    planFileMigration(file, inputDir, outputDir, dailyNotesConfig, config)
+    planFileMigration(
+      file,
+      inputDir,
+      outputDir,
+      dailyNotesConfig,
+      obsidianAppConfig,
+      config,
+    )
   );
 
   // Print migration plan
   printMigrationPlan(plans, inputDir, outputDir);
+
+  console.log(dim("\nIgnored paths:"));
+  for (const [path, count] of Object.entries(ignored)) {
+    console.log(dim(`- ${path} (${count} files)`));
+  }
 
   if (config.dryRun) {
     console.log(yellow("\n🔍 Dry run completed. No files were modified.\n"));
