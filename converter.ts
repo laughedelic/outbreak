@@ -197,6 +197,7 @@ const convertTasks = (
               }
               break;
               // Other date types are ignored as they don't have Logseq equivalents
+              // TODO: add done date as a property?
           }
         }
 
@@ -215,15 +216,14 @@ const convertBlocks: ConversionRule = {
     const blockLines: string[] = [];
     let blockType: string | null = null;
 
-    function closeBlock() {
-      // console.debug("<:", blockType, "\n");
+    function commitBlock() {
       if (blockType) {
         // pass the block content recursively to handle nested blocks
         const recurse = convertBlocks.convert(blockLines.join("\n"));
         converted.push(recurse);
         converted.push(`#+END_${blockType.toUpperCase()}`);
+        // reset the block state
         blockType = null;
-        // reset block lines
         blockLines.length = 0;
       }
     }
@@ -237,35 +237,31 @@ const convertBlocks: ConversionRule = {
         const groups = blockMatch.groups;
         if (!blockType) { // start a new block
           blockType = groups?.callout ? groups.type : "QUOTE";
-          // console.debug(">:", blockType);
           converted.push(`#+BEGIN_${blockType.toUpperCase()}`);
           // callouts can have a title
           if (groups?.text && blockType !== "QUOTE") {
-            // console.debug("T:", groups.text);
             blockLines.push(`**${groups.text.trimEnd()}**`);
           }
         }
         if (
           !groups?.callout && groups?.text !== undefined
         ) {
-          // console.debug("I:", groups.text);
           blockLines.push(groups.text.trimEnd());
         }
         continue;
       }
 
       if (blockType && line.trim() === "") { // blank line ends the block
-        closeBlock();
+        commitBlock();
         continue;
       }
 
       // Regular line
-      // console.debug("R:", line);
       converted.push(line);
     }
 
     // Handle any remaining open blocks
-    closeBlock();
+    commitBlock();
 
     return converted.join("\n");
   },
