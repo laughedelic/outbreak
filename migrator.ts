@@ -1,5 +1,12 @@
 import { walk } from "jsr:@std/fs/walk";
-import { basename, dirname, extname, join, relative } from "jsr:@std/path";
+import {
+  basename,
+  dirname,
+  extname,
+  globToRegExp,
+  join,
+  relative,
+} from "jsr:@std/path";
 import { sprintf } from "jsr:@std/fmt/printf";
 import { blue, cyan, dim, green, red, yellow } from "jsr:@std/fmt/colors";
 import { Spinner } from "jsr:@std/cli/unstable-spinner";
@@ -19,7 +26,7 @@ interface ObsidianAppConfig {
 interface MigrationConfig {
   useNamespaces: boolean;
   journalDateFormat: string;
-  ignoredPaths?: string[];
+  ignoredPaths: string[];
   dryRun: boolean;
 }
 
@@ -230,16 +237,24 @@ async function executeMigrationPlan(
   spinner.stop();
 }
 
+const defaultConfig: MigrationConfig = {
+  useNamespaces: false,
+  journalDateFormat: "YYYY-MM-DD",
+  ignoredPaths: [
+    "archive/**",
+    ".*/**", // any hidden directories in the root
+    "**/.*", // hidden files (anywhere)
+  ],
+  dryRun: false,
+};
+
 export async function migrateVault(
   inputDir: string,
   outputDir: string,
   options: Partial<MigrationConfig> = {},
 ) {
   const config: MigrationConfig = {
-    useNamespaces: false,
-    journalDateFormat: "YYYY-MM-DD",
-    ignoredPaths: [".obsidian", ".git", ".vscode", ".trash"],
-    dryRun: false,
+    ...defaultConfig,
     ...options,
   };
 
@@ -263,11 +278,14 @@ export async function migrateVault(
   const ignored: Record<string, number> = {};
   for await (const entry of walk(inputDir, { includeDirs: false })) {
     // Skip ignored paths
-    const ignoredPath = config.ignoredPaths?.find((path) =>
-      entry.path.includes(path)
+    const ignorePattern = config.ignoredPaths.find((pattern) =>
+      globToRegExp(pattern).test(relative(inputDir, entry.path))
     );
-    if (ignoredPath) {
-      ignored[ignoredPath] = (ignored[ignoredPath] || 0) + 1;
+    if (ignorePattern) {
+      const key = ignorePattern.includes("**")
+        ? dirname(relative(inputDir, entry.path)).split("/")[0]
+        : ignorePattern;
+      ignored[key] = (ignored[key] || 0) + 1;
       continue;
     }
     files.push(entry.path);
@@ -297,7 +315,8 @@ export async function migrateVault(
   // Print migration plan
   printMigrationPlan(plans, inputDir, outputDir);
 
-  console.log(dim("\nIgnored paths:"));
+  const ignoredTotal = Object.values(ignored).reduce((a, b) => a + b, 0);
+  console.log(dim(`\nIgnored: ${ignoredTotal} files`));
   for (const [path, count] of Object.entries(ignored)) {
     console.log(dim(`- ${path} (${count} files)`));
   }
