@@ -1,9 +1,8 @@
 import { walk } from "jsr:@std/fs/walk";
 import { basename, dirname, extname, join, relative } from "jsr:@std/path";
 import { sprintf } from "jsr:@std/fmt/printf";
-import { blue, dim, green, red, yellow } from "jsr:@std/fmt/colors";
+import { blue, cyan, dim, green, red, yellow } from "jsr:@std/fmt/colors";
 import { Spinner } from "jsr:@std/cli/unstable-spinner";
-import { parse as parsePath } from "jsr:@std/path";
 import moment from "npm:moment";
 import { MarkdownConverter } from "./converter.ts";
 import { fullConversion } from "./outbreak.ts";
@@ -11,6 +10,10 @@ import { fullConversion } from "./outbreak.ts";
 interface ObsidianDailyNotesConfig {
   format?: string;
   folder?: string;
+}
+
+interface ObsidianAppConfig {
+  attachmentFolderPath?: string;
 }
 
 interface MigrationConfig {
@@ -60,30 +63,32 @@ function isDailyNote(
   return parsedMoment.isValid();
 }
 
-// Function to check if a file is an asset
-function isAsset(filePath: string): boolean {
-  // TODO: check Obsidian config for the asset folder
-  const assetExtensions = [
-    ".png",
-    ".jpg",
-    ".jpeg",
-    ".gif",
-    ".svg",
-    ".pdf",
-    ".mp3",
-    ".wav",
-    ".mp4",
-    ".mov",
-    ".zip",
-  ];
-  return assetExtensions.includes(extname(filePath).toLowerCase());
+async function readObsidianAppConfig(
+  vaultPath: string,
+): Promise<ObsidianAppConfig> {
+  try {
+    const configPath = join(vaultPath, ".obsidian", "app.json");
+    const content = await Deno.readTextFile(configPath);
+    return JSON.parse(content);
+  } catch (_error) {
+    console.warn(
+      yellow("⚠️  Could not read Obsidian config, using defaults"),
+    );
+    return {};
+  }
 }
 
-function newPagePath(filePath: string, useNamespaces: boolean): string {
+// Function to check if a file is an asset
+function isAsset(filePath: string, config: ObsidianAppConfig): boolean {
+  const attachmentFolder = config.attachmentFolderPath || "attachments";
+  return dirname(filePath).startsWith(attachmentFolder);
+}
+
+function newPageName(filePath: string, useNamespaces: boolean): string {
   const filename = useNamespaces
     ? filePath.replace(/[/]/g, "___") // Replace slashes with triple underscores (Logseq convention)
     : basename(filePath); // Keep only the filename (note names should be unique in Obsidian)
-  return join("pages", filename);
+  return filename;
 }
 
 // Function to create migration plan for a single file
@@ -92,6 +97,7 @@ function planFileMigration(
   inputDir: string,
   outputDir: string,
   dailyNotesConfig: ObsidianDailyNotesConfig,
+  obsidianAppConfig: ObsidianAppConfig,
   config: MigrationConfig,
 ): MigrationPlan {
   const relativePath = relative(inputDir, inputPath);
@@ -118,7 +124,8 @@ function planFileMigration(
     };
   }
 
-  if (isAsset(relativePath)) {
+  // Handle assets
+  if (isAsset(relativePath, obsidianAppConfig)) {
     return {
       source: inputPath,
       destination: join(outputDir, "assets", basename(relativePath)),
@@ -132,7 +139,8 @@ function planFileMigration(
     source: inputPath,
     destination: join(
       outputDir,
-      newPagePath(relativePath, config.useNamespaces),
+      "pages",
+      newPageName(relativePath, config.useNamespaces),
     ),
     type: "page",
     action: config.useNamespaces ? "rename" : "move",
