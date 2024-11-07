@@ -2,9 +2,9 @@ import { assertEquals } from "jsr:@std/assert";
 import { fullConversion } from "./outbreak.ts";
 import { MarkdownConverter } from "./converter.ts";
 
-// Task Tests
-Deno.test("Tasks", async (t) => {
-  const input = `
+Deno.test("Comprehensive test", async (t) => {
+  await t.step("full document", () => {
+    const input = `
 ---
 aliases: ["note1", "test note"]
 tags:
@@ -56,7 +56,7 @@ def hello():
 \`\`\`
 `.trim();
 
-  const expected = `
+    const expected = `
 aliases:: note1, test note
 tags:: test, example
 
@@ -101,8 +101,9 @@ tags:: test, example
       \`\`\`
       `.trim();
 
-  const converter = new MarkdownConverter({
-    globalFilterTag: "#task",
+    const converter = new MarkdownConverter({
+      globalFilterTag: "#task",
+    });
+    assertEquals(fullConversion(input, converter), expected);
   });
-  assertEquals(fullConversion(input, converter), expected);
 });

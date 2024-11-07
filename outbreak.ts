@@ -65,7 +65,7 @@ async function processFile(
   }
 }
 
-async function confirmInPlaceProcessing(fileCount: number): Promise<boolean> {
+function confirmInPlaceProcessing(fileCount: number): boolean {
   console.log(
     yellow("\n⚠️  Warning: You are about to modify files in-place!\n"),
   );

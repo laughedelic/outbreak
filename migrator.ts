@@ -45,7 +45,7 @@ async function readDailyNotesConfig(
     const configPath = join(vaultPath, ".obsidian", "daily-notes.json");
     const content = await Deno.readTextFile(configPath);
     return JSON.parse(content);
-  } catch (error) {
+  } catch (_error) {
     console.warn(
       yellow("⚠️  Could not read daily notes config, using defaults"),
     );
