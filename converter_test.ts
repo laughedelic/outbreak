@@ -573,7 +573,7 @@ Deno.test("Complex Cases", async (t) => {
     const input = [
       "> [!note]",
       "> Outer callout",
-      "> > [!warning]",
+      "> > [!attention]",
       "> >Inner callout",
       "> > > Regular quote",
       "> >",
@@ -583,13 +583,13 @@ Deno.test("Complex Cases", async (t) => {
     const expected = [
       "#+BEGIN_NOTE",
       "Outer callout",
-      "#+BEGIN_WARNING",
+      "#+BEGIN_IMPORTANT",
       "Inner callout",
       "#+BEGIN_QUOTE",
       "Regular quote",
       "#+END_QUOTE",
       "inner callout continues",
-      "#+END_WARNING",
+      "#+END_IMPORTANT",
       "#+END_NOTE",
     ].join("\n");
 

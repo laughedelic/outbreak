@@ -162,7 +162,7 @@ text
 #+END_QUOTE
 ```
 
-### Callouts (Admonitions)
+### Callouts (Admonitions, blocks)
 
 - Obsidian uses basic block quote syntax + a callout type
 	- <https://help.obsidian.md/Editing+and+formatting/Callouts>
@@ -186,6 +186,41 @@ some useful
 tip note
 #+END_TIP
 ```
+
+#### Supported block types
+
+##### [Obsidian callout types](https://help.obsidian.md/Editing+and+formatting/Callouts#Supported+types)
+
+- note
+- abstract (summary, tldr)
+- info
+- todo
+- tip (hint, important)
+- success (check, done)
+- question (help, faq)
+- warning (caution, attention)
+- failure (fail, missing)
+- danger (error)
+- bug
+- example
+- quote (cite)
+
+##### [Logseq block types](https://docs.logseq.com/#/page/advanced%20commands)
+
+With a potential mapping to Obsidian types:
+
+- ℹ️ `NOTE`: note/info/summary/tldr/abstract, default?
+- 💡 `TIP`: tip/hint/help/question/faq
+- ❗ `IMPORTANT`: important/attention/
+- 🔥 `CAUTION`: caution/todo
+- ⚠ ️ `WARNING`:  warning/error/danger/bug/fail/failure/missing
+- 📌 `PINNED`: pinned/done/check/success
+- `EXAMPLE`: example (code block?)
+- `QUOTE`: quote/cite (+ standard block quote)
+- special blocks:
+	- `VERSE`: for poetry? looks like a quote
+	- `COMMENT`: doesn't seem to render (probably something from Org-mode)
+	- `CENTER`: actually centers the text!
 
 ### Embeds (inline references)
 

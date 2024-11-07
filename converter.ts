@@ -207,14 +207,42 @@ const convertTasks = (
   },
 });
 
-// TODO: congifurable block types: https://docs.logseq.com/#/page/advanced%20commands
+// Logseq block types: https://docs.logseq.com/#/page/advanced%20commands
+type LogseqBlockType =
+  | "NOTE"
+  | "TIP"
+  | "IMPORTANT"
+  | "CAUTION"
+  | "WARNING"
+  | "EXAMPLE"
+  | "QUOTE";
+
+// Mapping of Logseq block types to supported Obsidian callouts
+// https://help.obsidian.md/Editing+and+formatting/Callouts#Supported+types
+// TODO: expose this as configuration
+const blockTypeMapping: Record<LogseqBlockType, string[]> = {
+  NOTE: ["note", "info", "summary", "tldr", "abstract"],
+  TIP: ["tip", "hint", "help", "question", "faq"],
+  IMPORTANT: ["important", "attention"],
+  CAUTION: ["caution", "todo"],
+  WARNING: ["warning", "error", "danger", "bug", "fail", "failure", "missing"],
+  EXAMPLE: ["example"],
+  QUOTE: ["quote", "cite"],
+};
+
+const blockTypeLookup: Record<string, LogseqBlockType> = Object.fromEntries(
+  Object.entries(blockTypeMapping).flatMap(([type, aliases]) =>
+    aliases.map((alias) => [alias.toLowerCase(), type as LogseqBlockType])
+  ),
+);
+
 const convertBlocks: ConversionRule = {
   name: "blocks",
   convert: (content: string) => {
     const lines = content.split("\n");
     const converted: string[] = [];
     const blockLines: string[] = [];
-    let blockType: string | null = null;
+    let blockType: LogseqBlockType | null = null;
 
     function commitBlock() {
       if (blockType) {
@@ -230,14 +258,16 @@ const convertBlocks: ConversionRule = {
 
     for (const line of lines) {
       const blockMatch = line.match(
-        /^>\s?(?<callout>\[!(?<type>\w+)\][+-]?\s?)?(?<text>.*)$/,
+        /^>\s?(\[!(?<callout>\w+)\][+-]?\s?)?(?<text>.*)$/,
       );
 
       if (blockMatch) {
         const groups = blockMatch.groups;
         if (!blockType) { // start a new block
-          blockType = groups?.callout ? groups.type : "QUOTE";
+          const calloutType = groups?.callout?.toLowerCase();
+          blockType = blockTypeLookup[calloutType || "quote"];
           converted.push(`#+BEGIN_${blockType.toUpperCase()}`);
+
           // callouts can have a title
           if (groups?.text && blockType !== "QUOTE") {
             blockLines.push(`**${groups.text.trimEnd()}**`);
@@ -318,7 +348,7 @@ const convertEmbeds: ConversionRule = {
       },
     );
 
-    // TODO: another case for tweets
+    // TODO: another case for tweets/x
 
     return content;
   },
