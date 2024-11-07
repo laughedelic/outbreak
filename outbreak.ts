@@ -271,6 +271,7 @@ const defaultConfig: MigrationConfig = {
   journalDateFormat: "YYYY-MM-DD",
   ignoredPaths: [
     // "archive/**",
+    "**/*.txt",
     ".*/**", // any hidden directories in the root
     "**/.*", // hidden files (anywhere)
   ],
@@ -287,9 +288,8 @@ export async function migrateVault(
     ...options,
   };
 
-  // const converter = new MarkdownConverter({
-  //   globalFilterTag: "#task",
-  // });
+  // Request permissions to read from input directory
+  await Deno.permissions.request({ name: "read", path: inputDir });
 
   // Initialize spinner for file discovery
   const scanSpinner = new Spinner({
@@ -365,6 +365,7 @@ export async function migrateVault(
   }
 
   // Execute migration
+  await Deno.permissions.request({ name: "write", path: outputDir });
   await executeMigrationPlan(plans);
 
   console.log(green("\n✅ Migration completed successfully!\n"));
@@ -379,7 +380,7 @@ if (import.meta.main) {
 
   if (!inputDir || !outputDir) {
     console.log(
-      "Usage: deno run --unstable --allow-read --allow-write migration-cli.ts <input-dir> <output-dir> [options]",
+      "Usage: deno run outbreak.ts <input-dir> <output-dir> [options]",
     );
     console.log("\nOptions:");
     console.log(
@@ -387,9 +388,6 @@ if (import.meta.main) {
     );
     console.log(
       "  --dry-run           Show what would be migrated without making changes",
-    );
-    console.log(
-      "  --date-format=XXX   Specify output date format for journal files",
     );
     Deno.exit(1);
   }
@@ -399,14 +397,6 @@ if (import.meta.main) {
     useNamespaces: flags.has("--use-namespaces"),
     dryRun: flags.has("--dry-run"),
   };
-
-  // Parse date format if provided
-  const dateFormatArg = [...flags].find((arg) =>
-    arg.startsWith("--date-format=")
-  );
-  if (dateFormatArg) {
-    options.journalDateFormat = dateFormatArg.split("=")[1];
-  }
 
   await migrateVault(inputDir, outputDir, options)
     .catch((error) => {
