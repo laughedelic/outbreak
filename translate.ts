@@ -314,6 +314,14 @@ const convertBlocks: ConversionRule = {
   },
 };
 
+// a rule for removing ```tasks and ```dataview(js)? blocks
+const removeTasksAndDataviewBlocks: ConversionRule = {
+  name: "removeTasksAndDataview",
+  convert: (content: string) => {
+    return content.replace(/^```(tasks|dataview(js)?)\n([\s\S]*?)\n```/gm, "");
+  },
+};
+
 export function extractProperties(
   content: string,
 ): { properties: string[]; body: string } {
@@ -413,6 +421,7 @@ export function translate(
   const rules: ConversionRule[] = [
     convertFrontmatter,
     convertBlocks,
+    removeTasksAndDataviewBlocks,
     convertTasks(conf.tasks),
     convertHighlights,
     convertWikiLinks,
