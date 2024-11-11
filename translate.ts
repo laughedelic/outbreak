@@ -347,7 +347,11 @@ export function extractProperties(
       ? "alias"
       : key.replaceAll(/\s+/g, "-");
 
-    const valueStr = Array.isArray(value) ? value.join(", ") : value;
+    const valueStr = key === "created"
+      ? `[[${value}]]` // TODO: configurable date format
+      : Array.isArray(value)
+      ? value.join(", ")
+      : value;
     properties.push(`${keyStr}:: ${valueStr}`);
   }
 
