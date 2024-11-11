@@ -143,7 +143,6 @@ Deno.test("Task advanced features", async (t) => {
     const config: TranslationConfig = {
       tasks: {
         convertDates: true,
-        createDateProperty: true,
       },
     };
 
@@ -164,12 +163,14 @@ Deno.test("Task advanced features", async (t) => {
         name: "converts created date to property",
         input: "- [ ] Task ➕ 2024-01-03",
         expected: `- TODO Task
-  created:: [[2024-01-03]]`,
+  .created:: [[2024-01-03]]`,
       },
       {
         name: "ignores other dates",
-        input: "- [ ] Task 🛫 2024-01-04 ✅ 2024-01-05 ❌ 2024-01-06",
-        expected: "- TODO Task",
+        input: `- [ ] Task 🛫 2024-01-04 ✅ 2024-01-05 ❌ 2024-01-06`,
+        expected: `- TODO Task
+  .completed:: [[2024-01-05]]
+  .cancelled:: [[2024-01-06]]`,
       },
       {
         name: "handles multiple dates",
@@ -177,7 +178,7 @@ Deno.test("Task advanced features", async (t) => {
         expected: `- TODO Task
   DEADLINE: <2024-01-01 Mon>
   SCHEDULED: <2024-01-02 Tue>
-  created:: [[2024-01-03]]`,
+  .created:: [[2024-01-03]]`,
       },
     ];
 
@@ -194,7 +195,6 @@ Deno.test("Task advanced features", async (t) => {
     const config: TranslationConfig = {
       tasks: {
         convertDates: true,
-        createDateProperty: true,
       },
     };
 
@@ -271,7 +271,6 @@ Deno.test("Task advanced features", async (t) => {
           "🔼": "B",
         },
         convertDates: true,
-        createDateProperty: true,
       },
     };
 
@@ -281,7 +280,7 @@ Deno.test("Task advanced features", async (t) => {
         input: "  - [ ] ⏫ Important task #task 📅 2024-01-01 ➕ 2024-01-02",
         expected: `  - TODO [#A] Important task
     DEADLINE: <2024-01-01 Mon>
-    created:: [[2024-01-02]]`,
+    .created:: [[2024-01-02]]`,
       },
       {
         name: "converts completed task with all features",
@@ -822,7 +821,6 @@ This is a sample content.
     `.trim();
 
     const expected = `
-title:: Sample Title
 date:: 2023-10-01
 
 This is a sample content.
