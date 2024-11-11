@@ -87,8 +87,9 @@ async function readObsidianAppConfig(
 
 // Function to check if a file is an asset
 function isAsset(filePath: string, config: ObsidianAppConfig): boolean {
-  const attachmentFolder = config.attachmentFolderPath || "attachments";
-  return dirname(filePath).startsWith(attachmentFolder);
+  // const attachmentFolder = config.attachmentFolderPath || "attachments";
+  // return dirname(filePath).startsWith(attachmentFolder);
+  return extname(filePath) !== ".md";
 }
 
 function newPageName(filePath: string, useNamespaces: boolean): string {
