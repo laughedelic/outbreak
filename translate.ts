@@ -159,7 +159,7 @@ const convertTasks = (
 
           while ((dateMatch = dateRegex.exec(text)) !== null) {
             const [_, emoji, date] = dateMatch;
-            const type = TaskDateTypeMapping[emoji] as TaskDate["type"];
+            const type = TaskDateTypeMapping[emoji] as TaskDateType;
 
             dates.push({ type, date, emoji });
           }

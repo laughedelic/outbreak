@@ -270,7 +270,7 @@ const defaultConfig: MigrationConfig = {
   useNamespaces: false,
   journalDateFormat: "YYYY-MM-DD",
   ignoredPaths: [
-    // "archive/**",
+    "archive/**",
     "**/*.txt",
     ".*/**", // any hidden directories in the root
     "**/.*", // hidden files (anywhere)
@@ -303,9 +303,21 @@ export async function migrateVault(
   const obsidianAppConfig = await readObsidianAppConfig(inputDir);
 
   // Find all files
+  const discoveredFiles = walk(inputDir, {
+    includeDirs: false,
+    // These are hard-ignored patterns:
+    skip: [
+      /\.DS_Store/,
+      /\.git/,
+      /\.obsidian/,
+      /\.trash/,
+      /\.vscode/,
+    ],
+  });
   const files: string[] = [];
+  // Track soft-ignored paths
   const ignored: Record<string, number> = {};
-  for await (const entry of walk(inputDir, { includeDirs: false })) {
+  for await (const entry of discoveredFiles) {
     // Skip ignored paths
     const ignorePattern = config.ignoredPaths.find((pattern) =>
       globToRegExp(pattern).test(relative(inputDir, entry.path))
