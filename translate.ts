@@ -50,7 +50,7 @@ export type TasksConfig = {
   globalFilterTag?: string;
   priorityMapping: Record<string, TaskPriority>;
   convertDates: boolean;
-  createDateProperty: boolean;
+  dateProperties: Partial<Record<TaskDateType, string>>;
 };
 
 // Default configuration
@@ -58,7 +58,11 @@ const defaultTasksConfig: TasksConfig = {
   globalFilterTag: "#task",
   priorityMapping: TaskPriorityMapping,
   convertDates: true,
-  createDateProperty: false,
+  dateProperties: {
+    created: ".created",
+    done: ".completed",
+    cancelled: ".cancelled",
+  },
 };
 
 export type TranslationConfig = {
@@ -70,6 +74,7 @@ const defaultTranslationConfig: TranslationConfig = {
 };
 
 // Helper to format dates with day names
+// TODO: use a fixed format?
 function formatTaskDate(date: string): string {
   const dayName = new Date(date).toLocaleDateString("en-US", {
     weekday: "short",
@@ -183,6 +188,9 @@ const convertTasks = (
           );
         }
 
+        // Remove dependency markers (🆔 abcdef, ⛔ abcdef)
+        taskText = taskText.replace(/ (🆔|⛔) \w+/, "");
+
         // Convert task status
         const taskStatus = TaskStatusMapping[status as string];
 
@@ -195,6 +203,7 @@ const convertTasks = (
         // Add dates with proper indentation
         for (const { type, date } of dates) {
           const formattedDate = formatTaskDate(date);
+          const property = conf.dateProperties[type];
           switch (type) {
             case "deadline":
               lines.push(`${indent}  DEADLINE: <${formattedDate}>`);
@@ -202,13 +211,10 @@ const convertTasks = (
             case "scheduled":
               lines.push(`${indent}  SCHEDULED: <${formattedDate}>`);
               break;
-            case "created":
-              if (conf.createDateProperty) {
-                lines.push(`${indent}  created:: [[${date}]]`);
+            default:
+              if (property) {
+                lines.push(`${indent}  ${property}:: [[${date}]]`);
               }
-              break;
-              // Other date types are ignored as they don't have Logseq equivalents
-              // TODO: add done date as a property?
           }
         }
 
