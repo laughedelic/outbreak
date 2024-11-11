@@ -329,8 +329,18 @@ export function extractProperties(
   const properties: string[] = [];
 
   for (const [key, value] of Object.entries(parsedYaml)) {
+    // Skip the title property because it can cause name conflicts
+    if (key.toLowerCase() === "title") continue;
+
+    // A few special cases for Logseq properties
+    const keyStr = key === "tag"
+      ? "tags"
+      : key === "aliases"
+      ? "alias"
+      : key.replaceAll(/\s+/g, "-");
+
     const valueStr = Array.isArray(value) ? value.join(", ") : value;
-    properties.push(`${key}:: ${valueStr}`);
+    properties.push(`${keyStr}:: ${valueStr}`);
   }
 
   const body = content.replace(frontmatterRegex, "");
