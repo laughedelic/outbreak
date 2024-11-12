@@ -25,6 +25,7 @@ interface ObsidianAppConfig {
 
 interface MigrationConfig {
   useNamespaces: boolean;
+  extraDailyNotesFormats: string[];
   journalDateFormat: string;
   ignoredPaths: string[];
   dryRun: boolean;
@@ -56,17 +57,21 @@ async function readDailyNotesConfig(
 // Function to check if a file matches the daily notes format
 function isDailyNote(
   filePath: string,
-  config: ObsidianDailyNotesConfig,
+  dailyNotesConfig: ObsidianDailyNotesConfig,
+  migrationConfig: MigrationConfig,
 ): boolean {
-  const format = config.format || "YYYY-MM-DD";
-  const folder = config.folder || ""; // Default to root if not specified
+  const format = dailyNotesConfig.format || "YYYY-MM-DD";
+  const folder = dailyNotesConfig.folder || ""; // Default to root if not specified
 
   // Construct full format including the folder
   const fullFormat = folder ? `[${folder}]/${format}` : format;
   // Drop the extension
   const notePath = filePath.slice(0, -extname(filePath).length);
   // Try to parse it with moment.js (strict mode)
-  const parsedMoment = moment(notePath, fullFormat, true);
+  const parsedMoment = moment(notePath, [
+    fullFormat,
+    ...migrationConfig.extraDailyNotesFormats,
+  ], true);
   return parsedMoment.isValid();
 }
 
@@ -110,13 +115,16 @@ function planFileMigration(
 ): MigrationPlan {
   const relativePath = relative(inputDir, inputPath);
 
-  if (isDailyNote(relativePath, dailyNotesConfig)) {
+  if (isDailyNote(relativePath, dailyNotesConfig, config)) {
     const inputFilename = basename(relativePath, extname(relativePath));
     const inputFormat = basename(dailyNotesConfig.format || "YYYY-MM-DD");
     const outputFormat = config.journalDateFormat;
 
     // Reformat the date string according to the configured format
-    const parsedDate = moment(inputFilename, inputFormat);
+    const parsedDate = moment(inputFilename, [
+      inputFormat,
+      ...config.extraDailyNotesFormats.map((f) => basename(f)),
+    ]);
     const reformattedDate = parsedDate.isValid()
       ? parsedDate.format(outputFormat)
       : inputFilename;
@@ -269,10 +277,15 @@ async function executeMigrationPlan(
 
 const defaultConfig: MigrationConfig = {
   useNamespaces: false,
+  extraDailyNotesFormats: [
+    "[journal]/YYYY/YYYY-MM-DD",
+    "[journal]/YYYY/MM/YYYY-MM-DD",
+  ],
   journalDateFormat: "YYYY-MM-DD",
   ignoredPaths: [
-    "archive/**",
+    // "archive/**",
     "**/*.txt",
+    "**/*.json",
     ".*/**", // any hidden directories in the root
     "**/.*", // hidden files (anywhere)
   ],
