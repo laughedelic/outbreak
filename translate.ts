@@ -282,7 +282,7 @@ const convertBlocks: ConversionRule = {
         const groups = blockMatch.groups;
         if (!blockType) { // start a new block
           const calloutType = groups?.callout?.toLowerCase() || "";
-          blockType = blockTypeLookup[calloutType] || "quote";
+          blockType = blockTypeLookup[calloutType] || "QUOTE";
           converted.push(`#+BEGIN_${blockType.toUpperCase()}`);
 
           // callouts can have a title

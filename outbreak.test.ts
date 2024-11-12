@@ -56,7 +56,7 @@ def hello():
 `.trim();
 
     const expected = `
-aliases:: note1, test note
+alias:: note1, test note
 tags:: test, example
 
 - # Test Document
@@ -65,9 +65,11 @@ tags:: test, example
     - TODO Basic task
     - DONE Completed task with dates
       DEADLINE: <2024-03-15 Fri>
+      .completed:: [[2024-03-20]]
     - DOING In progress task
       SCHEDULED: <2024-04-01 Mon>
     - CANCELLED Cancelled task
+      .cancelled:: [[2024-03-10]]
     - ### Priorities
       - TODO [#A] High priority task
       - TODO [#B] Medium priority task

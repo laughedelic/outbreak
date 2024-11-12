@@ -799,7 +799,7 @@ This is a sample content.
     `.trim();
 
     const expected = `
-aliases:: buh, bar
+alias:: buh, bar
 description:: This is a text with a [[reference]] and a [link](https://example.com)
 tags:: foo, words with spaces
 
@@ -815,6 +815,7 @@ This is a sample content.
 title: Sample Title
 
 date: 2023-10-01
+tag: foo
 ---
 
 This is a sample content.
@@ -822,6 +823,7 @@ This is a sample content.
 
     const expected = `
 date:: 2023-10-01
+tags:: foo
 
 This is a sample content.
     `.trim();
