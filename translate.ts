@@ -93,6 +93,7 @@ function isEscaped(str: string, pos: number): boolean {
   return count % 2 === 1;
 }
 
+// TODO: remove this rule because Logseq supports markdown syntax
 const convertHighlights: ConversionRule = {
   name: "highlights",
   convert: (content: string) => {
@@ -117,9 +118,6 @@ const convertHighlights: ConversionRule = {
 const convertWikiLinks: ConversionRule = {
   name: "wikilinks",
   convert: (content: string) => {
-    // Handle empty wiki links (preserve them)
-    content = content.replace(/\[\[\|\]\]/g, "[[|]]");
-
     // Convert normal wiki links with aliases, checking for escapes and unterminated wiki-links
     return content.replace(
       /\[\[([^\]|]+)?(\|([^\]]+))?\]\]/g,
@@ -129,6 +127,13 @@ const convertWikiLinks: ConversionRule = {
         }
         if (isEscaped(content, offset)) {
           return match; // Preserve escaped wiki links
+        }
+        if (page === alias) {
+          return `[[${page}]]`; // Simplify links like [[name|name]] to [[name]]
+        }
+        // handle asset links
+        if (page.match(/\.(png|jpg|jpeg|gif|pdf|docx|xlsx|pptx)$/)) {
+          return `[${alias}](assets/${page})`;
         }
         return `[${alias}]([[${page}]])`;
       },
@@ -373,6 +378,17 @@ const convertFrontmatter: ConversionRule = {
 const convertEmbeds: ConversionRule = {
   name: "embeds",
   convert: (content: string) => {
+    // Handle common asset formats
+    // TODO: better asset handling (requires a file index to see what is migrated as an asset)
+    content = content.replace(
+      /!\[\[(.*?)\.(png|jpg|jpeg|gif|pdf|docx|xlsx|pptx)(\|(.*?))?\]\]/g,
+      (_match, filename, extension, _aliasPart, alias) => {
+        const fullName = `${filename}.${extension}`;
+        const displayAlias = alias || fullName;
+        return `![${displayAlias}](assets/${fullName})`;
+      },
+    );
+
     // Convert Obsidian embeds to Logseq format
     content = content.replace(/!\[\[(.*?)\]\]/g, (_match, embed) => {
       return `{{embed [[${embed}]]}}`;
