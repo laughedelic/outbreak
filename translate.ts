@@ -128,12 +128,12 @@ const convertWikiLinks: ConversionRule = {
         if (isEscaped(content, offset)) {
           return match; // Preserve escaped wiki links
         }
-        if (page === alias) {
-          return `[[${page}]]`; // Simplify links like [[name|name]] to [[name]]
-        }
         // handle asset links
         if (page.match(/\.(png|jpg|jpeg|gif|pdf|docx|xlsx|pptx)$/)) {
           return `[${alias}](assets/${page})`;
+        }
+        if (page === alias) {
+          return `[[${page}]]`; // Simplify links like [[name|name]] to [[name]]
         }
         return `[${alias}]([[${page}]])`;
       },
