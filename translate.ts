@@ -319,21 +319,31 @@ const convertBlocks: ConversionRule = {
   },
 };
 
-export function extractProperties(
+type Frontmatter = Record<string, string | string[]>;
+
+export function parseFrontmatter(
   content: string,
-): { properties: string[]; body: string } {
+): { frontmatter: Frontmatter; body: string } {
   const frontmatterRegex = /^---\n([\s\S]*?)\n---\n/;
   const match = content.match(frontmatterRegex);
 
-  if (!match) return { properties: [], body: content };
+  if (!match) return { frontmatter: {}, body: content };
 
   const yamlContent = match[1];
   const parsedYaml = yaml.parse(yamlContent, {
     schema: "failsafe",
-  }) as Record<string, string | string[]>;
-  const properties: string[] = [];
+  }) as Frontmatter;
 
-  for (const [key, value] of Object.entries(parsedYaml)) {
+  const body = content.replace(frontmatterRegex, "");
+  return { frontmatter: parsedYaml, body };
+}
+
+export function renameAndFilterProperties(
+  frontmatter: Frontmatter,
+): Frontmatter {
+  const renamed: Frontmatter = {};
+
+  for (const [key, value] of Object.entries(frontmatter)) {
     // Skip the title property because it can cause name conflicts
     if (key.toLowerCase() === "title") continue;
 
@@ -344,15 +354,26 @@ export function extractProperties(
       ? "alias"
       : key.replaceAll(/\s+/g, "-");
 
-    const valueStr = key === "created"
-      ? `[[${value}]]` // TODO: configurable date format
-      : Array.isArray(value)
-      ? value.join(", ")
-      : value;
-    if (valueStr) properties.push(`${keyStr}:: ${valueStr}`);
+    // Linkify the "created" property
+    renamed[keyStr] = keyStr === "created" ? `[[${value}]]` : value;
   }
 
-  const body = content.replace(frontmatterRegex, "");
+  return renamed;
+}
+
+export function formatProperties(properties: Frontmatter): string[] {
+  return Object.entries(properties).flatMap(([key, value]) => {
+    const valueStr = Array.isArray(value) ? value.join(", ") : value;
+    return valueStr ? [`${key}:: ${valueStr}`] : [];
+  });
+}
+
+export function extractProperties(
+  content: string,
+): { properties: string[]; body: string } {
+  const { frontmatter, body } = parseFrontmatter(content);
+  const renamedProperties = renameAndFilterProperties(frontmatter);
+  const properties = formatProperties(renamedProperties);
   return { properties, body };
 }
 
