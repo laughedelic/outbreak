@@ -388,6 +388,20 @@ const convertFrontmatter: ConversionRule = {
   },
 };
 
+const PATTERNS = {
+  // Matches Vimeo video URLs, capturing the video ID
+  vimeo:
+    /(?:https?:\/\/)?(?:(?:www|player)\.)?vimeo\.com\/(?:channels\/(?:\w+\/)?|groups\/(?:[^\/]*)\/videos\/|video\/|)(\d+)(?:$|\/|\?|#|\&)/,
+
+  // Matches YouTube URLs (regular videos, shorts, and embeds), capturing the video ID
+  youtube:
+    /(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/(?:watch\?v=|embed\/|shorts\/)|youtu\.be\/).*$/,
+
+  // Matches Twitter/X status URLs, capturing the tweet ID
+  twitter:
+    /(?:https?:\/\/)?(?:www\.)?(?:twitter\.com|x\.com)\/(?:\w+)\/status\/(\d+)(?:\/?\w*\/?)*(?:\?.*)?$/,
+};
+
 const convertEmbeds: ConversionRule = {
   name: "embeds",
   convert: (content: string) => {
@@ -407,16 +421,18 @@ const convertEmbeds: ConversionRule = {
       return `{{embed [[${embed}]]}}`;
     });
 
-    // Convert video embeds from YouTube and Vimeo
-    // NOTE: might not handle all possible short URLs
+    // Convert embeds from YouTube, Vimeo, and Twitter
     content = content.replace(
-      /!\[(.*?)\]\((https:\/\/(?:www\.)?(youtube\.com\/watch\?v=|youtu\.be\/|vimeo\.com\/)[^\s)]+)\)/g,
+      /!\[(.*?)\]\((https:\/\/[^\s)]+)\)/g,
       (_match, _altText, url) => {
-        return `{{video ${url}}}`;
+        if (PATTERNS.youtube.test(url) || PATTERNS.vimeo.test(url)) {
+          return `{{video ${url}}}`;
+        } else if (PATTERNS.twitter.test(url)) {
+          return `{{tweet ${url}}}`;
+        }
+        return _match; // Preserve other URLs as is
       },
     );
-
-    // TODO: another case for tweets/x
 
     return content;
   },
