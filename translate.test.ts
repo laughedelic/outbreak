@@ -793,6 +793,7 @@ description: This is a text with a [[reference]] and a [link](https://example.co
 tags:
   - foo
   - "words with spaces"
+empty:
 ---
 
 This is a sample content.

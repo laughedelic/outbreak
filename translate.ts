@@ -349,7 +349,7 @@ export function extractProperties(
       : Array.isArray(value)
       ? value.join(", ")
       : value;
-    properties.push(`${keyStr}:: ${valueStr}`);
+    if (valueStr) properties.push(`${keyStr}:: ${valueStr}`);
   }
 
   const body = content.replace(frontmatterRegex, "");
