@@ -11,7 +11,13 @@ import { sprintf } from "jsr:@std/fmt/printf";
 import { blue, cyan, dim, green, red, yellow } from "jsr:@std/fmt/colors";
 import { Spinner } from "jsr:@std/cli/unstable-spinner";
 import moment from "npm:moment";
-import { extractProperties, translate } from "./translate.ts";
+import {
+  extractProperties,
+  formatProperties,
+  parseFrontmatter,
+  renameAndFilterProperties,
+  translate,
+} from "./translate.ts";
 import { outlineChunks, splitIntoChunks } from "./outline.ts";
 
 interface ObsidianDailyNotesConfig {
@@ -34,6 +40,7 @@ interface MigrationConfig {
 interface MigrationPlan {
   source: string;
   newName: string;
+  renamed?: { oldName: string; newName: string };
   type: "journals" | "assets" | "pages";
   message?: string;
 }
@@ -128,11 +135,16 @@ function planFileMigration(
     const reformattedDate = parsedDate.isValid()
       ? parsedDate.format(outputFormat)
       : inputFilename;
+    const renamed = reformattedDate === inputFilename ? undefined : {
+      oldName: inputFilename,
+      newName: reformattedDate,
+    };
 
     return {
       source: inputPath,
       newName: join(outputDir, "journals", `${reformattedDate}.md`),
       type: "journals",
+      renamed: renamed,
       message: parsedDate.isValid()
         ? undefined
         : yellow("⚠️  Could not parse as a date"),
@@ -209,10 +221,27 @@ function printMigrationPlan(
 
 export function markdownToLogseq(
   content: string,
-  // config: TaskConfig,
+  plan?: MigrationPlan,
+  config?: MigrationConfig,
 ) {
   // First process frontmatter
-  const { properties, body } = extractProperties(content);
+  const { frontmatter, body } = parseFrontmatter(content);
+  const filteredFrontmatter = renameAndFilterProperties(frontmatter);
+  if (plan?.type === "journals") {
+    // remove "created" from frontmatter
+    delete filteredFrontmatter["created"];
+    // if the journals date format is not the same, add the old file name as an alias
+    if (plan.renamed) {
+      const aliases = new Set([
+        plan.renamed.oldName,
+        ...(filteredFrontmatter["alias"] || []),
+      ]);
+      aliases.delete(plan.renamed.newName);
+      filteredFrontmatter["alias"] = Array.from(aliases);
+    }
+  }
+
+  const properties = formatProperties(filteredFrontmatter);
 
   const propertiesBlock = properties.length
     ? properties.join("\n") + "\n\n"
@@ -235,7 +264,7 @@ export function markdownToLogseq(
 // Function to execute migration plan
 async function executeMigrationPlan(
   plans: MigrationPlan[],
-  // config
+  config: MigrationConfig,
 ): Promise<void> {
   const spinner = new Spinner({
     message: "Executing migration plan...",
@@ -265,6 +294,8 @@ async function executeMigrationPlan(
       const content = await Deno.readTextFile(plan.source);
       const convertedContent = await markdownToLogseq(
         content,
+        plan,
+        config,
       );
       await Deno.writeTextFile(plan.newName, convertedContent);
     }
@@ -392,7 +423,7 @@ export async function migrateVault(
 
   // Execute migration
   await Deno.permissions.request({ name: "write", path: outputDir });
-  await executeMigrationPlan(plans);
+  await executeMigrationPlan(plans, config);
 
   console.log(green("\n✅ Migration completed successfully!\n"));
 }
