@@ -12,7 +12,6 @@ import { blue, cyan, dim, green, red, yellow } from "jsr:@std/fmt/colors";
 import { Spinner } from "jsr:@std/cli/unstable-spinner";
 import moment from "npm:moment";
 import {
-  extractProperties,
   formatProperties,
   parseFrontmatter,
   renameAndFilterProperties,
@@ -328,10 +327,18 @@ export async function migrateVault(
   outputDir: string,
   options: Partial<MigrationConfig> = {},
 ) {
+  const prepSpinner = new Spinner({
+    message: "🦠 Outbreak: Migrating Obsidian vault to Logseq...",
+    color: "cyan",
+  });
+  prepSpinner.start();
+
   const config: MigrationConfig = {
     ...defaultConfig,
     ...options,
   };
+
+  prepSpinner.stop();
 
   // Request permissions to read from input directory
   await Deno.permissions.request({ name: "read", path: inputDir });
