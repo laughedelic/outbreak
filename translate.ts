@@ -265,47 +265,52 @@ const convertBlocks: ConversionRule = {
     const converted: string[] = [];
     const blockLines: string[] = [];
     let blockType: LogseqBlockType | null = null;
+    let blockIndent: string = "";
 
     function commitBlock() {
       if (blockType) {
         // pass the block content recursively to handle nested blocks
         const recurse = convertBlocks.convert(blockLines.join("\n"));
         converted.push(recurse);
-        converted.push(`#+END_${blockType.toUpperCase()}`);
+        converted.push(`${blockIndent}#+END_${blockType.toUpperCase()}`);
         // reset the block state
         blockType = null;
         blockLines.length = 0;
+        blockIndent = "";
       }
     }
 
     for (const line of lines) {
       const blockMatch = line.match(
-        /^>\s?(\[!(?<callout>\w+)\][+-]?\s?)?(?<text>.*)$/,
+        /^(\s*)>\s?(\[!(?<callout>\w+)\][+-]?\s?)?(?<text>.*)$/,
       );
 
       if (blockMatch) {
         const groups = blockMatch.groups;
+        const indent = blockMatch[1] || "";
         if (!blockType) { // start a new block
           const calloutType = groups?.callout?.toLowerCase() || "";
           blockType = blockTypeLookup[calloutType] || "QUOTE";
-          converted.push(`#+BEGIN_${blockType.toUpperCase()}`);
+          blockIndent = indent;
+          converted.push(`${indent}#+BEGIN_${blockType.toUpperCase()}`);
 
           // callouts can have a title
           if (groups?.text && blockType !== "QUOTE") {
-            blockLines.push(`**${groups.text.trimEnd()}**`);
+            blockLines.push(`${indent}**${groups.text.trimEnd()}**`);
           }
         }
         if (
           !groups?.callout && groups?.text !== undefined
         ) {
-          blockLines.push(groups.text.trimEnd());
+          blockLines.push(`${indent}${groups.text.trimEnd()}`);
         }
         continue;
       }
 
-      if (blockType && line.trim() === "") { // blank line ends the block
+      if (blockType && !blockMatch) { // blank line ends the block
         commitBlock();
-        continue;
+        // converted.push(line);
+        // continue;
       }
 
       // Regular line

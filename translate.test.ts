@@ -593,9 +593,48 @@ Deno.test("Complex Cases", async (t) => {
       "#+BEGIN_QUOTE",
       "Regular quote",
       "#+END_QUOTE",
+      "",
       "inner callout continues",
       "#+END_IMPORTANT",
       "#+END_NOTE",
+    ].join("\n");
+
+    assertEquals(translate(input), expected);
+  });
+
+  await t.step("indented quote blocks inside lists", () => {
+    const input = [
+      "- this is a list",
+      "  - with a sub list",
+      "",
+      "    > with a quote",
+      "    > that continues here",
+      "",
+      "  > but then there is a quote",
+      "  > at the first level",
+      "  > and it's another quote",
+      "",
+      "- then the list goes on",
+      "- and on",
+    ].join("\n");
+
+    const expected = [
+      "- this is a list",
+      "  - with a sub list",
+      "",
+      "    #+BEGIN_QUOTE",
+      "    with a quote",
+      "    that continues here",
+      "    #+END_QUOTE",
+      "",
+      "  #+BEGIN_QUOTE",
+      "  but then there is a quote",
+      "  at the first level",
+      "  and it's another quote",
+      "  #+END_QUOTE",
+      "",
+      "- then the list goes on",
+      "- and on",
     ].join("\n");
 
     assertEquals(translate(input), expected);
