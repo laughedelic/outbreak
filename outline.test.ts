@@ -224,7 +224,8 @@ paragraph
 });
 
 Deno.test("outlineMarkdown handling block quotes", async (t) => {
-  const input = `
+  await t.step("correct quote indentation", () => {
+    const input = `
 # h1
 
 #+BEGIN_QUOTE
@@ -242,7 +243,6 @@ quote
 #+END_QUOTE
 `.trim();
 
-  await t.step("correct quote indentation", () => {
     const expectedOutput = `
 - # h1
   - #+BEGIN_QUOTE
@@ -257,6 +257,54 @@ quote
          with any indentation
       #+END_QUOTE
 `.trim();
+
+    assertEquals(
+      outlineMarkdown(input, { listNesting: "none" }),
+      expectedOutput,
+    );
+  });
+
+  await t.step("outlineMarkdown handling block quotes with lists", () => {
+    const input = `
+# h1
+
+#+BEGIN_QUOTE
+quote
+  text
+    with any indentation
+- list item inside quote
+  - nested item
+#+END_QUOTE
+
+## h2
+
+#+BEGIN_QUOTE
+quote
+  text
+    with any indentation
+- another list item inside quote
+  - another nested item
+#+END_QUOTE
+  `.trim();
+
+    const expectedOutput = `
+- # h1
+  - #+BEGIN_QUOTE
+    quote
+      text
+        with any indentation
+    - list item inside quote
+      - nested item
+    #+END_QUOTE
+  - ## h2
+    - #+BEGIN_QUOTE
+      quote
+        text
+          with any indentation
+      - another list item inside quote
+        - another nested item
+      #+END_QUOTE
+  `.trim();
 
     assertEquals(
       outlineMarkdown(input, { listNesting: "none" }),

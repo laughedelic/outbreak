@@ -10,6 +10,7 @@ export function splitIntoChunks(markdown: string): Chunk[] {
   let currentChunk: string[] = [];
   let currentType: Chunk["type"] | null = null;
   let inCodeBlock = false;
+  let inBlockQuote = 0;
 
   function commitChunk() {
     if (currentChunk.length > 0 && currentType) {
@@ -26,6 +27,10 @@ export function splitIntoChunks(markdown: string): Chunk[] {
 
   for (const line of lines) {
     const frontmatterDelimiter = line.match(/^---$/);
+    const isCodeBlockDelimiter = line.trim().startsWith("```");
+    const isBlockStart = line.trim().startsWith("#+BEGIN_");
+    const isBlockEnd = line.trim().startsWith("#+END_");
+
     // If the first chunk is a frontmatter block, pass through it and commit as-is
     if (!chunks.length && frontmatterDelimiter) {
       currentType = "frontmatter";
@@ -65,13 +70,21 @@ export function splitIntoChunks(markdown: string): Chunk[] {
 
     // console.log(newType, ": ", line);
 
-    const isCodeBlockDelimiter = line.trim().startsWith("```");
     // Detect code block start/end
     if (isCodeBlockDelimiter) {
       inCodeBlock = !inCodeBlock;
     }
 
-    if (inCodeBlock && !isParagraph) {
+    // Detect unbreakable block start/end
+    if (isBlockStart) {
+      inBlockQuote = Math.max(inBlockQuote + 1, 1);
+    } else if (isBlockEnd) {
+      inBlockQuote = Math.max(inBlockQuote - 1, 0);
+    }
+
+    const isUnbreakableBlock = inBlockQuote > 0 || inCodeBlock;
+
+    if (isUnbreakableBlock && !isParagraph) {
       const l = line.trim() ? line : "";
       currentChunk.push(l);
       continue;
