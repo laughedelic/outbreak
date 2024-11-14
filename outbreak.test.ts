@@ -38,6 +38,13 @@ This is a paragraph with ==highlighted text== and a [[wiki link|custom alias]].
 
    - Another bullet
      1. Nested number
+        \`\`\`code
+        A code block
+
+        with multiple lines
+        \`\`\`
+
+        and then text after code
      2. Another number
 
 > A simple quote
@@ -90,6 +97,12 @@ tags:: test, example
        - Another bullet
          - Nested number
            logseq.order-list-type:: number
+            \`\`\`code
+            A code block
+
+            with multiple lines
+            \`\`\`
+            and then text after code
          - Another number
            logseq.order-list-type:: number
     - #+BEGIN_QUOTE

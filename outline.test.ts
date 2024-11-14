@@ -1,5 +1,6 @@
 import { assertEquals } from "jsr:@std/assert";
 import { outlineMarkdown } from "./outline.ts";
+import { splitIntoChunks } from "./outline.ts";
 
 Deno.test("outlineMarkdown", async (t) => {
   await t.step("should convert headings and paragraphs correctly", () => {
@@ -264,6 +265,160 @@ quote
   });
 });
 
+Deno.test("outlineMarkdown handling code blocks", async (t) => {
+  await t.step("should handle starting with a code block", () => {
+    const input = `
+\`\`\`js
+console.log("Hello, world!");
+
+console.log("Goodbye, world!");
+\`\`\`
+
+# Header
+Some text
+`.trim();
+
+    const expectedOutput = `
+- \`\`\`js
+  console.log("Hello, world!");
+
+  console.log("Goodbye, world!");
+  \`\`\`
+- # Header
+  - Some text
+`.trim();
+
+    assertEquals(outlineMarkdown(input), expectedOutput);
+  });
+
+  await t.step("should handle ending with a code block", () => {
+    const input = `
+# Header
+Some text
+
+\`\`\`js
+console.log("Goodbye, world!");
+\`\`\`
+`.trim();
+
+    const expectedOutput = `
+- # Header
+  - Some text
+  - \`\`\`js
+    console.log("Goodbye, world!");
+    \`\`\`
+`.trim();
+
+    assertEquals(outlineMarkdown(input), expectedOutput);
+  });
+
+  await t.step("should handle a code block under a header", () => {
+    const input = `
+# Header
+
+\`\`\`js
+console.log("Hello, world!");
+
+console.log("Goodbye, world!");
+\`\`\`
+`.trim();
+
+    const expectedOutput = `
+- # Header
+  - \`\`\`js
+    console.log("Hello, world!");
+
+    console.log("Goodbye, world!");
+    \`\`\`
+`.trim();
+
+    assertEquals(outlineMarkdown(input), expectedOutput);
+  });
+
+  await t.step("should handle a code block within a list", () => {
+    const input = `
+- List item
+  \`\`\`js
+  console.log("Hello, world!");
+  \`\`\`
+- Another item
+`.trim();
+
+    const expectedOutput = `
+- List item
+  \`\`\`js
+  console.log("Hello, world!");
+  \`\`\`
+- Another item
+`.trim();
+
+    assertEquals(outlineMarkdown(input), expectedOutput);
+  });
+
+  await t.step("should handle multiple code blocks", () => {
+    const input = `
+\`\`\`js
+console.log("Block 1");
+\`\`\`
+
+# Header
+
+\`\`\`js
+console.log("Block 2");
+\`\`\`
+`.trim();
+
+    const expectedOutput = `
+- \`\`\`js
+  console.log("Block 1");
+  \`\`\`
+- # Header
+  - \`\`\`js
+    console.log("Block 2");
+    \`\`\`
+`.trim();
+
+    assertEquals(outlineMarkdown(input), expectedOutput);
+  });
+
+  await t.step("should handle code blocks together with lists", () => {
+    const input = `
+\`\`\`text
+code block
+
+with multiple lines
+\`\`\`
+- list item
+  - nested item
+  - another nested item
+\`\`\`
+code block 
+    with varying
+  indentation
+\`\`\`
+    `.trim();
+    console.log(splitIntoChunks(input));
+
+    const expectedOutput = `
+- \`\`\`text
+  code block
+
+  with multiple lines
+  \`\`\`
+- list item
+  - nested item
+  - another nested item
+- \`\`\`
+  code block 
+      with varying
+    indentation
+  \`\`\`
+    `.trim();
+
+    assertEquals(outlineMarkdown(input), expectedOutput);
+  });
+});
+
 Deno.test("outlineMarkdown handling lists", async (t) => {
   await t.step("should handle multiline lists", () => {
     const input = `
@@ -321,35 +476,43 @@ another paragraph
 Deno.test("outlineMarkdown handling code blocks in lists", async (t) => {
   await t.step("should handle indented code blocks inside lists", () => {
     const input = `
-    - list item
-      - nested item
-        \`\`\`text
-        code block
-        \`\`\`
-      - another nested item
-        \`\`\`
-        another code block
-        \`\`\`
-    - another list item
-      \`\`\`
-      code block at first level
-      \`\`\`
+- list item
+  - nested item
+    \`\`\`text
+    code block
+
+    with multiple lines
+    \`\`\`
+  - another nested item
+    \`\`\`
+    another code block
+    \`\`\`
+- another list item
+  \`\`\`
+  code block 
+      with varying
+    indentation
+  \`\`\`
     `.trim();
 
     const expectedOutput = `
-    - list item
-      - nested item
-        \`\`\`text
-        code block
-        \`\`\`
-      - another nested item
-        \`\`\`
-        another code block
-        \`\`\`
-    - another list item
-      \`\`\`
-      code block at first level
-      \`\`\`
+- list item
+  - nested item
+    \`\`\`text
+    code block
+
+    with multiple lines
+    \`\`\`
+  - another nested item
+    \`\`\`
+    another code block
+    \`\`\`
+- another list item
+  \`\`\`
+  code block 
+      with varying
+    indentation
+  \`\`\`
     `.trim();
 
     assertEquals(outlineMarkdown(input), expectedOutput);
@@ -357,31 +520,31 @@ Deno.test("outlineMarkdown handling code blocks in lists", async (t) => {
 
   await t.step("should handle text after a code block", () => {
     const input = `
-    - list item
-      \`\`\`
-      code block
-      \`\`\`
-      text after code block
-    - another list item
-      - nested item
-        \`\`\`
-        nested code block
-        \`\`\`
-        text after nested code block
+- list item
+  \`\`\`
+  code block
+  \`\`\`
+  text after code block
+- another list item
+  - nested item
+    \`\`\`
+    nested code block
+    \`\`\`
+    text after nested code block
     `.trim();
 
     const expectedOutput = `
-    - list item
-      \`\`\`
-      code block
-      \`\`\`
-      text after code block
-    - another list item
-      - nested item
-        \`\`\`
-        nested code block
-        \`\`\`
-        text after nested code block
+- list item
+  \`\`\`
+  code block
+  \`\`\`
+  text after code block
+- another list item
+  - nested item
+    \`\`\`
+    nested code block
+    \`\`\`
+    text after nested code block
     `.trim();
 
     assertEquals(outlineMarkdown(input), expectedOutput);
@@ -389,38 +552,38 @@ Deno.test("outlineMarkdown handling code blocks in lists", async (t) => {
 
   await t.step("should handle blank lines before/after code blocks", () => {
     const input = `
-    - list item
+- list item
 
-      \`\`\`
-      code block
-      \`\`\`
+  \`\`\`
+  code block
+  \`\`\`
 
-      text after code block
+  text after code block
 
-    - another list item
+- another list item
 
-      - nested item
+  - nested item
 
-        \`\`\`
-        nested code block
-        \`\`\`
+    \`\`\`
+    nested code block
+    \`\`\`
 
-        text after nested code block
+    text after nested code block
     `.trim();
 
     const expectedOutput = `
-    - list item
-      \`\`\`
-      code block
-      \`\`\`
-      text after code block
-    - another list item
-      - nested item
-        \`\`\`
-        nested code block
-        \`\`\`
-        text after nested code block
-    `.trim();
+- list item
+  \`\`\`
+  code block
+  \`\`\`
+  text after code block
+- another list item
+  - nested item
+    \`\`\`
+    nested code block
+    \`\`\`
+    text after nested code block
+  `.trim();
 
     assertEquals(outlineMarkdown(input), expectedOutput);
   });
@@ -429,33 +592,33 @@ Deno.test("outlineMarkdown handling code blocks in lists", async (t) => {
     "should handle code blocks on different levels of nested lists",
     () => {
       const input = `
-    - list item
+- list item
+  \`\`\`
+  code block at first level
+  \`\`\`
+  - nested item
+    \`\`\`
+    code block at nested level
+    \`\`\`
+    - deeper nested item
       \`\`\`
-      code block at first level
+      code block at deeper nested level
       \`\`\`
-      - nested item
-        \`\`\`
-        code block at nested level
-        \`\`\`
-        - deeper nested item
-          \`\`\`
-          code block at deeper nested level
-          \`\`\`
-    `.trim();
+`.trim();
 
       const expectedOutput = `
-    - list item
+- list item
+  \`\`\`
+  code block at first level
+  \`\`\`
+  - nested item
+    \`\`\`
+    code block at nested level
+    \`\`\`
+    - deeper nested item
       \`\`\`
-      code block at first level
+      code block at deeper nested level
       \`\`\`
-      - nested item
-        \`\`\`
-        code block at nested level
-        \`\`\`
-        - deeper nested item
-          \`\`\`
-          code block at deeper nested level
-          \`\`\`
 `.trim();
 
       assertEquals(outlineMarkdown(input), expectedOutput);
@@ -464,57 +627,57 @@ Deno.test("outlineMarkdown handling code blocks in lists", async (t) => {
 
   await t.step("should handle edge cases with code blocks", () => {
     const input = `
-    - list item
-      \`\`\`
-      code block
-      \`\`\`
+- list item
+  \`\`\`
+  code block
+  \`\`\`
 
-      text after code block
-    - another list item
-      - nested item
-        \`\`\`
-        nested code block
-        \`\`\`
-        text after nested code block
-    - list item with no blank lines
+  text after code block
+- another list item
+  - nested item
+    \`\`\`
+    nested code block
+    \`\`\`
+    text after nested code block
+- list item with no blank lines
 
-      \`\`\`
-      code block
-      \`\`\`
-      text after code block
-    - another list item with no blank lines
+  \`\`\`
+  code block
+  \`\`\`
+  text after code block
+- another list item with no blank lines
 
-      - nested item
-        \`\`\`
-        nested code block
-        \`\`\`
-        text after nested code block
+  - nested item
+    \`\`\`
+    nested code block
+    \`\`\`
+    text after nested code block
     `.trim();
 
     const expectedOutput = `
-    - list item
-      \`\`\`
-      code block
-      \`\`\`
-      text after code block
-    - another list item
-      - nested item
-        \`\`\`
-        nested code block
-        \`\`\`
-        text after nested code block
-    - list item with no blank lines
-      \`\`\`
-      code block
-      \`\`\`
-      text after code block
-    - another list item with no blank lines
-      - nested item
-        \`\`\`
-        nested code block
-        \`\`\`
-        text after nested code block
-    `.trim();
+- list item
+  \`\`\`
+  code block
+  \`\`\`
+  text after code block
+- another list item
+  - nested item
+    \`\`\`
+    nested code block
+    \`\`\`
+    text after nested code block
+- list item with no blank lines
+  \`\`\`
+  code block
+  \`\`\`
+  text after code block
+- another list item with no blank lines
+  - nested item
+    \`\`\`
+    nested code block
+    \`\`\`
+    text after nested code block
+`.trim();
 
     assertEquals(outlineMarkdown(input), expectedOutput);
   });

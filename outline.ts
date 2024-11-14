@@ -9,6 +9,7 @@ export function splitIntoChunks(markdown: string): Chunk[] {
   const chunks: Chunk[] = [];
   let currentChunk: string[] = [];
   let currentType: Chunk["type"] | null = null;
+  let inCodeBlock = false;
 
   function commitChunk() {
     if (currentChunk.length > 0 && currentType) {
@@ -41,10 +42,11 @@ export function splitIntoChunks(markdown: string): Chunk[] {
       continue;
     }
 
-    if (!line.trim()) {
+    if (!line.trim() && !inCodeBlock) {
       if (currentType !== "list") {
         commitChunk();
       }
+      // currentChunk.push(line);
       continue;
     }
 
@@ -61,8 +63,25 @@ export function splitIntoChunks(markdown: string): Chunk[] {
       ? "paragraph"
       : null;
 
+    // console.log(newType, ": ", line);
+
+    const isCodeBlockDelimiter = line.trim().startsWith("```");
+    // Detect code block start/end
+    if (isCodeBlockDelimiter) {
+      inCodeBlock = !inCodeBlock;
+    }
+
+    if (inCodeBlock && !isParagraph) {
+      const l = line.trim() ? line : "";
+      currentChunk.push(l);
+      continue;
+    }
+
     // If this is a new chunk type, commit the previous chunk (always commit headings)
-    if (newType && newType !== currentType || currentType === "heading") {
+    if (
+      newType && newType !== currentType ||
+      currentType === "heading"
+    ) {
       commitChunk();
       currentType = newType;
     }
@@ -134,12 +153,16 @@ export function outlineChunks(
     // Add the chunk with proper indentation
     const chunkLines = chunk.content.split("\n");
     chunkLines.forEach((line, index) => {
-      const prefix = index === 0 && chunk.type !== "list"
-        ? "- "
-        : chunk.type === "paragraph"
-        ? "  "
-        : "";
-      lines.push(indent + prefix + listNestingIndent + line);
+      if (!line.trim()) {
+        lines.push("");
+      } else {
+        const prefix = index === 0 && chunk.type !== "list"
+          ? "- "
+          : chunk.type === "paragraph"
+          ? "  "
+          : "";
+        lines.push(indent + prefix + listNestingIndent + line);
+      }
     });
   }
 
