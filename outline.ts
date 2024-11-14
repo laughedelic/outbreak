@@ -84,7 +84,9 @@ export function splitIntoChunks(markdown: string): Chunk[] {
 
     const isUnbreakableBlock = inBlockQuote > 0 || inCodeBlock;
 
-    if (isUnbreakableBlock && !isParagraph) {
+    const isListEnd = !isList && currentType === "list";
+
+    if (isUnbreakableBlock && !isListEnd) {
       const l = line.trim() ? line : "";
       currentChunk.push(l);
       continue;

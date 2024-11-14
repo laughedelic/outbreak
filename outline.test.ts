@@ -278,13 +278,11 @@ quote
 
 ## h2
 
-#+BEGIN_QUOTE
-quote
-  text
-    with any indentation
-- another list item inside quote
-  - another nested item
-#+END_QUOTE
+#+BEGIN_TIP
+**tip**
+- list item inside block
+#+END_TIP
+### h3
   `.trim();
 
     const expectedOutput = `
@@ -297,13 +295,11 @@ quote
       - nested item
     #+END_QUOTE
   - ## h2
-    - #+BEGIN_QUOTE
-      quote
-        text
-          with any indentation
-      - another list item inside quote
-        - another nested item
-      #+END_QUOTE
+    - #+BEGIN_TIP
+      **tip**
+      - list item inside block
+      #+END_TIP
+    - ### h3
   `.trim();
 
     assertEquals(
