@@ -130,68 +130,6 @@ and more of this mess
 
     assertEquals(outlineMarkdown(input), expectedOutput);
   });
-  await t.step("should handle multiline lists", () => {
-    const input = `
-paragraph
-
-- a list
-  of items
-
-  - and nested items
-  - with more items
-    - inside
-      them
-
-another paragraph
-`.trim();
-
-    const expectedOutput = `
-- paragraph
-- a list
-  of items
-  - and nested items
-  - with more items
-    - inside
-      them
-- another paragraph
-`.trim();
-
-    assertEquals(outlineMarkdown(input), expectedOutput);
-  });
-
-  await t.step("newlines shouldn't break lists", () => {
-    const input = `
-- this is a list
-  - with a sub list
-
-    > with a quote
-    > that continues here
-    
-  > but then there is a quote 
-  > at the first level
-  > and it's another quote
-
-- then the list goes on
-
-  - sub item after a newline
-- and the last one
-`.trim();
-
-    const expectedOutput = `
-- this is a list
-  - with a sub list
-    > with a quote
-    > that continues here
-  > but then there is a quote 
-  > at the first level
-  > and it's another quote
-- then the list goes on
-  - sub item after a newline
-- and the last one
-`.trim();
-
-    assertEquals(outlineMarkdown(input), expectedOutput);
-  });
 });
 
 Deno.test("outlineMarkdown with listNesting option", async (t) => {
@@ -323,5 +261,261 @@ quote
       outlineMarkdown(input, { listNesting: "none" }),
       expectedOutput,
     );
+  });
+});
+
+Deno.test("outlineMarkdown handling lists", async (t) => {
+  await t.step("should handle multiline lists", () => {
+    const input = `
+paragraph
+
+- a list
+  of items
+
+  - and nested items
+  - with more items
+    - inside
+      them
+
+another paragraph
+`.trim();
+
+    const expectedOutput = `
+- paragraph
+- a list
+  of items
+  - and nested items
+  - with more items
+    - inside
+      them
+- another paragraph
+`.trim();
+
+    assertEquals(outlineMarkdown(input), expectedOutput);
+  });
+
+  await t.step("newlines shouldn't break lists", () => {
+    const input = `
+- this is a list
+  - with a sub list
+
+    #+BEGIN_QUOTE
+    with a quote
+    that continues here
+    #+END_QUOTE
+    
+  #+BEGIN_QUOTE
+  but then there is a quote 
+  at the first level
+  and it's another quote
+  #+END_QUOTE
+
+- then the list goes on
+
+  - sub item after a newline
+- and the last one
+`.trim();
+  });
+});
+
+Deno.test("outlineMarkdown handling code blocks in lists", async (t) => {
+  await t.step("should handle indented code blocks inside lists", () => {
+    const input = `
+    - list item
+      - nested item
+        \`\`\`text
+        code block
+        \`\`\`
+      - another nested item
+        \`\`\`
+        another code block
+        \`\`\`
+    - another list item
+      \`\`\`
+      code block at first level
+      \`\`\`
+    `.trim();
+
+    const expectedOutput = `
+    - list item
+      - nested item
+        \`\`\`text
+        code block
+        \`\`\`
+      - another nested item
+        \`\`\`
+        another code block
+        \`\`\`
+    - another list item
+      \`\`\`
+      code block at first level
+      \`\`\`
+    `.trim();
+
+    assertEquals(outlineMarkdown(input), expectedOutput);
+  });
+
+  await t.step("should handle text after a code block", () => {
+    const input = `
+    - list item
+      \`\`\`
+      code block
+      \`\`\`
+      text after code block
+    - another list item
+      - nested item
+        \`\`\`
+        nested code block
+        \`\`\`
+        text after nested code block
+    `.trim();
+
+    const expectedOutput = `
+    - list item
+      \`\`\`
+      code block
+      \`\`\`
+      text after code block
+    - another list item
+      - nested item
+        \`\`\`
+        nested code block
+        \`\`\`
+        text after nested code block
+    `.trim();
+
+    assertEquals(outlineMarkdown(input), expectedOutput);
+  });
+
+  await t.step("should handle blank lines before/after code blocks", () => {
+    const input = `
+    - list item
+
+      \`\`\`
+      code block
+      \`\`\`
+
+      text after code block
+
+    - another list item
+
+      - nested item
+
+        \`\`\`
+        nested code block
+        \`\`\`
+
+        text after nested code block
+    `.trim();
+
+    const expectedOutput = `
+    - list item
+      \`\`\`
+      code block
+      \`\`\`
+      text after code block
+    - another list item
+      - nested item
+        \`\`\`
+        nested code block
+        \`\`\`
+        text after nested code block
+    `.trim();
+
+    assertEquals(outlineMarkdown(input), expectedOutput);
+  });
+
+  await t.step(
+    "should handle code blocks on different levels of nested lists",
+    () => {
+      const input = `
+    - list item
+      \`\`\`
+      code block at first level
+      \`\`\`
+      - nested item
+        \`\`\`
+        code block at nested level
+        \`\`\`
+        - deeper nested item
+          \`\`\`
+          code block at deeper nested level
+          \`\`\`
+    `.trim();
+
+      const expectedOutput = `
+    - list item
+      \`\`\`
+      code block at first level
+      \`\`\`
+      - nested item
+        \`\`\`
+        code block at nested level
+        \`\`\`
+        - deeper nested item
+          \`\`\`
+          code block at deeper nested level
+          \`\`\`
+`.trim();
+
+      assertEquals(outlineMarkdown(input), expectedOutput);
+    },
+  );
+
+  await t.step("should handle edge cases with code blocks", () => {
+    const input = `
+    - list item
+      \`\`\`
+      code block
+      \`\`\`
+
+      text after code block
+    - another list item
+      - nested item
+        \`\`\`
+        nested code block
+        \`\`\`
+        text after nested code block
+    - list item with no blank lines
+
+      \`\`\`
+      code block
+      \`\`\`
+      text after code block
+    - another list item with no blank lines
+
+      - nested item
+        \`\`\`
+        nested code block
+        \`\`\`
+        text after nested code block
+    `.trim();
+
+    const expectedOutput = `
+    - list item
+      \`\`\`
+      code block
+      \`\`\`
+      text after code block
+    - another list item
+      - nested item
+        \`\`\`
+        nested code block
+        \`\`\`
+        text after nested code block
+    - list item with no blank lines
+      \`\`\`
+      code block
+      \`\`\`
+      text after code block
+    - another list item with no blank lines
+      - nested item
+        \`\`\`
+        nested code block
+        \`\`\`
+        text after nested code block
+    `.trim();
+
+    assertEquals(outlineMarkdown(input), expectedOutput);
   });
 });
