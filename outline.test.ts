@@ -92,6 +92,7 @@ paragraph
 
 - a list
   of items
+
   - and nested items
   - with more items
     - inside
@@ -109,6 +110,40 @@ another paragraph
     - inside
       them
 - another paragraph
+`.trim();
+
+    assertEquals(outlineMarkdown(input), expectedOutput);
+  });
+
+  await t.step("newlines shouldn't break lists", () => {
+    const input = `
+- this is a list
+  - with a sub list
+
+    > with a quote
+    > that continues here
+    
+  > but then there is a quote 
+  > at the first level
+  > and it's another quote
+
+- then the list goes on
+
+  - sub item after a newline
+- and the last one
+`.trim();
+
+    const expectedOutput = `
+- this is a list
+  - with a sub list
+    > with a quote
+    > that continues here
+  > but then there is a quote 
+  > at the first level
+  > and it's another quote
+- then the list goes on
+  - sub item after a newline
+- and the last one
 `.trim();
 
     assertEquals(outlineMarkdown(input), expectedOutput);

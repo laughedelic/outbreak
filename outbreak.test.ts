@@ -33,6 +33,9 @@ This is a paragraph with ==highlighted text== and a [[wiki link|custom alias]].
 1. First item
 2. Second item
    - Nested bullet
+     > A quote
+     > inside a bullet
+
    - Another bullet
      1. Nested number
      2. Another number
@@ -80,6 +83,10 @@ tags:: test, example
     - Second item
       logseq.order-list-type:: number
        - Nested bullet
+         #+BEGIN_QUOTE
+         A quote
+         inside a bullet
+         #+END_QUOTE
        - Another bullet
          - Nested number
            logseq.order-list-type:: number

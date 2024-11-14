@@ -41,9 +41,10 @@ export function splitIntoChunks(markdown: string): Chunk[] {
       continue;
     }
 
-    // Skip empty lines between chunks
     if (!line.trim()) {
-      commitChunk();
+      if (currentType !== "list") {
+        commitChunk();
+      }
       continue;
     }
 
@@ -61,7 +62,7 @@ export function splitIntoChunks(markdown: string): Chunk[] {
       : null;
 
     // If this is a new chunk type, commit the previous chunk
-    if (newType && newType !== currentType && currentType !== "list") {
+    if (newType && newType !== currentType) {
       commitChunk();
       currentType = newType;
     }
