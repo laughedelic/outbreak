@@ -86,6 +86,50 @@ h4 paragraph out of order
     assertEquals(outlineMarkdown(input), expectedOutput);
   });
 
+  await t.step("should handle tags and checkboxes correctly", () => {
+    const input = `
+## h2-1
+
+#some-tag #another-tag
+
+### h3
+#### h4-1
+
+a paragraph
+- and a list
+- [ ] with a checkbox
+
+#### h4-2
+paragraph with no separating line
+#### h4-3
+and more of this mess
+- with a list
+- as well
+
+## h2-2 another big heading
+### h3-2 with a subheading
+`.trim();
+
+    const expectedOutput = `
+- ## h2-1
+  - #some-tag #another-tag
+  - ### h3
+    - #### h4-1
+      - a paragraph
+      - and a list
+      - [ ] with a checkbox
+    - #### h4-2
+      - paragraph with no separating line
+    - #### h4-3
+      - and more of this mess
+      - with a list
+      - as well
+- ## h2-2 another big heading
+  - ### h3-2 with a subheading
+`.trim();
+
+    assertEquals(outlineMarkdown(input), expectedOutput);
+  });
   await t.step("should handle multiline lists", () => {
     const input = `
 paragraph

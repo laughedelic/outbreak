@@ -61,8 +61,8 @@ export function splitIntoChunks(markdown: string): Chunk[] {
       ? "paragraph"
       : null;
 
-    // If this is a new chunk type, commit the previous chunk
-    if (newType && newType !== currentType) {
+    // If this is a new chunk type, commit the previous chunk (always commit headings)
+    if (newType && newType !== currentType || currentType === "heading") {
       commitChunk();
       currentType = newType;
     }
