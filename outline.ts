@@ -21,7 +21,7 @@ export function splitIntoChunks(markdown: string): Chunk[] {
         : 0;
       chunks.push({ type: currentType, content, level });
       currentChunk = [];
-      console.log("committing chunk", currentType, "\n", content, "\n");
+      // console.log("committing chunk", currentType, "\n", content, "\n");
       currentType = null;
     }
   }
