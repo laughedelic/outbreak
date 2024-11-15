@@ -133,6 +133,68 @@ and more of this mess
   });
 });
 
+Deno.test("outlineMarkdown handling mixed lists and headings", async (t) => {
+  await t.step("should handle lists before and after headings", () => {
+    const input = `
+- one
+- two
+
+# h1
+
+- three
+`.trim();
+
+    const expectedOutput = `
+- one
+- two
+- # h1
+  - three
+`.trim();
+
+    assertEquals(outlineMarkdown(input), expectedOutput);
+  });
+
+  await t.step("heading should split the list without blank lines", () => {
+    const input = `
+- one
+- two
+# h1
+- three
+`.trim();
+
+    const expectedOutput = `
+- one
+- two
+- # h1
+  - three
+`.trim();
+
+    assertEquals(outlineMarkdown(input), expectedOutput);
+  });
+
+  await t.step("hrule should end the list", () => {
+    const input = `
+- one
+- two
+
+---
+
+# h1
+- three
+`.trim();
+
+    const expectedOutput = `
+- one
+- two
+- ---
+- # h1
+  - three
+`.trim();
+
+    assertEquals(outlineMarkdown(input), expectedOutput);
+  });
+});
+
 Deno.test("outlineMarkdown with listNesting option", async (t) => {
   const input = `
 # h1

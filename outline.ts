@@ -11,6 +11,7 @@ export function splitIntoChunks(markdown: string): Chunk[] {
   let currentType: Chunk["type"] | null = null;
   let inCodeBlock = false;
   let inBlockQuote = 0;
+  let isUnbreakableBlock = false;
 
   function commitChunk() {
     if (currentChunk.length > 0 && currentType) {
@@ -20,7 +21,7 @@ export function splitIntoChunks(markdown: string): Chunk[] {
         : 0;
       chunks.push({ type: currentType, content, level });
       currentChunk = [];
-      // console.log("committing chunk", currentType, content);
+      console.log("committing chunk", currentType, "\n", content, "\n");
       currentType = null;
     }
   }
@@ -32,7 +33,7 @@ export function splitIntoChunks(markdown: string): Chunk[] {
     const isBlockEnd = line.trim().startsWith("#+END_");
 
     // If the first chunk is a frontmatter block, pass through it and commit as-is
-    if (!chunks.length && frontmatterDelimiter) {
+    if (!chunks.length && !currentType && frontmatterDelimiter) {
       currentType = "frontmatter";
       continue;
     }
@@ -47,7 +48,7 @@ export function splitIntoChunks(markdown: string): Chunk[] {
       continue;
     }
 
-    if (!line.trim() && !inCodeBlock) {
+    if (!isUnbreakableBlock && !line.trim()) {
       if (currentType !== "list") {
         commitChunk();
       }
@@ -82,7 +83,7 @@ export function splitIntoChunks(markdown: string): Chunk[] {
       inBlockQuote = Math.max(inBlockQuote - 1, 0);
     }
 
-    const isUnbreakableBlock = inBlockQuote > 0 || inCodeBlock;
+    isUnbreakableBlock = inBlockQuote > 0 || inCodeBlock;
 
     const isListEnd = !isList && currentType === "list";
 
