@@ -37,8 +37,8 @@ interface MigrationConfig {
 }
 
 interface MigrationPlan {
-  source: string;
-  newName: string;
+  inputPath: string;
+  outputPath: string;
   renamed?: { oldName: string; newName: string };
   type: "journals" | "assets" | "pages";
   message?: string;
@@ -140,8 +140,8 @@ function planFileMigration(
     };
 
     return {
-      source: inputPath,
-      newName: join(outputDir, "journals", `${reformattedDate}.md`),
+      inputPath: inputPath,
+      outputPath: join(outputDir, "journals", `${reformattedDate}.md`),
       type: "journals",
       renamed: renamed,
       message: parsedDate.isValid()
@@ -153,16 +153,16 @@ function planFileMigration(
   // Handle assets
   if (isAsset(relativePath, obsidianAppConfig)) {
     return {
-      source: inputPath,
-      newName: join(outputDir, "assets", basename(relativePath)),
+      inputPath: inputPath,
+      outputPath: join(outputDir, "assets", basename(relativePath)),
       type: "assets",
     };
   }
 
   // Handle regular pages
   return {
-    source: inputPath,
-    newName: join(
+    inputPath: inputPath,
+    outputPath: join(
       outputDir,
       "pages",
       newPageName(relativePath, config.useNamespaces),
@@ -195,9 +195,9 @@ function printMigrationPlan(
     if (plan.message) counts.warnings++;
 
     const logEntry = [
-      sourceColor(plan.type)(relative(inputDir, plan.source)),
+      sourceColor(plan.type)(relative(inputDir, plan.inputPath)),
       "\n   ",
-      dim(relative(outputDir, plan.newName)),
+      dim(relative(outputDir, plan.outputPath)),
       plan.message ? plan.message : "",
     ].join(" ");
     console.log(logEntry);
@@ -279,18 +279,18 @@ async function executeMigrationPlan(
       "Processing (%d/%d): %s",
       processed + 1,
       total,
-      dim(relative("", plan.source)),
+      dim(relative("", plan.inputPath)),
     );
 
     // Ensure destination directory exists
-    await Deno.mkdir(dirname(plan.newName), { recursive: true });
+    await Deno.mkdir(dirname(plan.outputPath), { recursive: true });
 
     if (plan.type === "assets") {
       // Simple copy for assets
-      await Deno.copyFile(plan.source, plan.newName);
+      await Deno.copyFile(plan.inputPath, plan.outputPath);
     } else {
       // Process markdown files
-      const content = await Deno.readTextFile(plan.source);
+      const content = await Deno.readTextFile(plan.inputPath);
       const convertedContent = await markdownToLogseq(
         content,
         plan,
