@@ -2,13 +2,13 @@
 
 ## Purpose
 
-This project provides tools to convert Markdown documents from Obsidian-flavored Markdown to Logseq's org-mode inspired Markdown. It includes two main scripts: `converter.ts` and `outliner.ts`, along with their respective test files. The project also includes documentation on the structural and syntactical differences between Obsidian and Logseq.
+This project provides tools to convert Markdown documents from Obsidian-flavored Markdown to Logseq's org-mode inspired Markdown. It includes two main scripts: `translate.ts` and `outliner.ts`, along with their respective test files. The project also includes documentation on the structural and syntactical differences between Obsidian and Logseq.
 
 ## Design
 
 ### Scripts
 
-1. **[converter.ts](converter.ts)**: This script handles the conversion of various Markdown elements such as tasks, highlights, wiki-links, embeds, block quotes, callouts, and frontmatter from Obsidian to Logseq format.
+1. **[translate.ts](translate.ts)**: This script handles the conversion of various Markdown elements such as tasks, highlights, wiki-links, embeds, block quotes, callouts, and frontmatter from Obsidian to Logseq format.
 2. **[outliner.ts](outliner.ts)**: This script converts the flat structure of Markdown documents into a nested list structure suitable for Logseq.
 
 ### Documentation
@@ -18,12 +18,12 @@ This project provides tools to convert Markdown documents from Obsidian-flavored
 
 ## Usage Instructions
 
-### `converter.ts`
+### `translate.ts`
 
 To convert a Markdown file from Obsidian to Logseq format, run the following command:
 
 ```sh
-deno run converter.ts <input-file> <output-file>
+deno run translate.ts <input-file> <output-file>
 ```
 
 ### `outliner.ts`
