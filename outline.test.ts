@@ -576,6 +576,25 @@ another paragraph
   - sub item after a newline
 - and the last one
 `.trim();
+
+    const expectedOutput = `
+- this is a list
+  - with a sub list
+    #+BEGIN_QUOTE
+    with a quote
+    that continues here
+    #+END_QUOTE
+  #+BEGIN_QUOTE
+  but then there is a quote 
+  at the first level
+  and it's another quote
+  #+END_QUOTE
+- then the list goes on
+  - sub item after a newline
+- and the last one
+    `.trim();
+
+    assertEquals(outlineMarkdown(input), expectedOutput);
   });
 });
 

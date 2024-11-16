@@ -97,7 +97,7 @@ async function readObsidianAppConfig(
 }
 
 // Function to check if a file is an asset
-function isAsset(filePath: string, config: ObsidianAppConfig): boolean {
+function isAsset(filePath: string): boolean {
   // const attachmentFolder = config.attachmentFolderPath || "attachments";
   // return dirname(filePath).startsWith(attachmentFolder);
   return extname(filePath) !== ".md";
@@ -221,7 +221,6 @@ function printMigrationPlan(
 export function markdownToLogseq(
   content: string,
   plan?: MigrationPlan,
-  config?: MigrationConfig,
 ) {
   // First process frontmatter
   const { frontmatter, body } = parseFrontmatter(content);

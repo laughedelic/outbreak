@@ -491,7 +491,7 @@ if (import.meta.main) { // CLI
 
   if (!inputFile || !outputFile) {
     console.log(
-      "Usage: deno run --allow-read --allow-write converter.ts <input-file> <output-file>",
+      "Usage: deno run --allow-read --allow-write translate.ts <input-file> <output-file>",
     );
     Deno.exit(1);
   }
