@@ -81,7 +81,8 @@ function isDailyNote(
   return parsedMoment.isValid();
 }
 
-async function readObsidianAppConfig(
+// TODO: this might come handy in the future, but isn't used right now
+async function _readObsidianAppConfig(
   vaultPath: string,
 ): Promise<ObsidianAppConfig> {
   try {
@@ -116,7 +117,6 @@ function planFileMigration(
   inputDir: string,
   outputDir: string,
   dailyNotesConfig: ObsidianDailyNotesConfig,
-  obsidianAppConfig: ObsidianAppConfig,
   config: MigrationConfig,
 ): MigrationPlan {
   const relativePath = relative(inputDir, inputPath);
@@ -151,7 +151,7 @@ function planFileMigration(
   }
 
   // Handle assets
-  if (isAsset(relativePath, obsidianAppConfig)) {
+  if (isAsset(relativePath)) {
     return {
       inputPath: inputPath,
       outputPath: join(outputDir, "assets", basename(relativePath)),
@@ -262,7 +262,6 @@ export function markdownToLogseq(
 // Function to execute migration plan
 async function executeMigrationPlan(
   plans: MigrationPlan[],
-  config: MigrationConfig,
 ): Promise<void> {
   const spinner = new Spinner({
     message: "Executing migration plan...",
@@ -293,9 +292,8 @@ async function executeMigrationPlan(
       const convertedContent = await markdownToLogseq(
         content,
         plan,
-        config,
       );
-      await Deno.writeTextFile(plan.newName, convertedContent);
+      await Deno.writeTextFile(plan.outputPath, convertedContent);
     }
 
     processed++;
@@ -332,7 +330,7 @@ export async function migrateVault(
   });
   prepSpinner.start();
 
-  const config: MigrationConfig = {
+  const migrationConfig: MigrationConfig = {
     ...defaultConfig,
     ...options,
   };
@@ -351,7 +349,6 @@ export async function migrateVault(
 
   // Read Obsidian configuration
   const dailyNotesConfig = await readDailyNotesConfig(inputDir);
-  const obsidianAppConfig = await readObsidianAppConfig(inputDir);
 
   // Find all files
   const discoveredFiles = walk(inputDir, {
@@ -370,7 +367,7 @@ export async function migrateVault(
   const ignored: Record<string, number> = {};
   for await (const entry of discoveredFiles) {
     // Skip ignored paths
-    const ignorePattern = config.ignoredPaths.find((pattern) =>
+    const ignorePattern = migrationConfig.ignoredPaths.find((pattern) =>
       globToRegExp(pattern).test(relative(inputDir, entry.path))
     );
     if (ignorePattern) {
@@ -399,8 +396,7 @@ export async function migrateVault(
       inputDir,
       outputDir,
       dailyNotesConfig,
-      obsidianAppConfig,
-      config,
+      migrationConfig,
     )
   );
 
@@ -413,7 +409,7 @@ export async function migrateVault(
     console.log(dim(`- ${path} (${count} files)`));
   }
 
-  if (config.dryRun) {
+  if (migrationConfig.dryRun) {
     console.log(yellow("\n🔍 Dry run completed. No files were modified.\n"));
     return;
   }
@@ -429,7 +425,7 @@ export async function migrateVault(
 
   // Execute migration
   await Deno.permissions.request({ name: "write", path: outputDir });
-  await executeMigrationPlan(plans, config);
+  await executeMigrationPlan(plans);
 
   console.log(green("\n✅ Migration completed successfully!\n"));
 }
