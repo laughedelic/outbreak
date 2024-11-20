@@ -1,4 +1,3 @@
-
 # Obsidian-flavored markdown vs. Logseq org-mode inspired markdown
 
 ## Problem
@@ -12,7 +11,7 @@
 
 ## Syntax differences
 
-#### Tasks
+### Tasks
 
 - Here Obsidian assumes usage of the Tasks plugin
 	- <https://help.obsidian.md/Editing+and+formatting/Basic+formatting+syntax#Task+lists>
@@ -135,26 +134,26 @@ ___
 text
 ```
 
-- Logseq uses custom properties format in the first block (bullet-point) of the page
+- Logseq uses custom properties format in the first block of the page (unindented)
 	- <https://docs.logseq.com/#/page/properties>
 
 ```
-- aliases:: buh, bar
-  tags:: foo, meh
+aliases:: buh, bar
+tags:: foo, meh
+
 - text
 ```
 
-### Block quotes
+### Block quotes (not required)
 
-- Obsidian: standard markdown:
+- Obsidian: (standard markdown)
 
 ```markdown
 > some
 > text
 ```
 
-- Logseq:
-
+- Logseq: (org-mode based)
 ```
 #+BEGIN_QUOTE
 some
@@ -162,7 +161,13 @@ text
 #+END_QUOTE
 ```
 
-### Callouts (Admonitions, blocks)
+
+> [!note]
+> 
+> Logseq supports standard markdown block quotes (but not callouts!), so the conversion is not strictly required
+
+
+### Callouts (Admonitions)
 
 - Obsidian uses basic block quote syntax + a callout type
 	- <https://help.obsidian.md/Editing+and+formatting/Callouts>
@@ -219,8 +224,21 @@ With a potential mapping to Obsidian types:
 - `QUOTE`: quote/cite (+ standard block quote)
 - special blocks:
 	- `VERSE`: for poetry? looks like a quote
-	- `COMMENT`: doesn't seem to render (probably something from Org-mode)
+	- `COMMENT`: for hidden comments (see below)
 	- `CENTER`: actually centers the text!
+
+### Comments
+
+Visible while editing, hidden in the preview mode.
+
+- Obsidian: `%% comment text %%` (can be inline)
+- Logseq: only block-comments (but can be in the middle of a block)
+  
+  ```
+  #+BEGIN_COMMENT
+  comment text
+  #+END_COMMENT
+  ```
 
 ### Embeds (inline references)
 
@@ -232,7 +250,7 @@ With a potential mapping to Obsidian types:
 	- works same for block embeds
 	- different ways to [embed media](https://docs.logseq.com/#/page/embed%20media%20-%20audio%2C%20photos%2C%20videos)
 
-> [!TODO]
+> [!TODO]  
 > embedding blocks: `![[page#^reference_id]]` vs. `{{embed ((block reference))}}`
 
 #### Video embeds
@@ -240,14 +258,22 @@ With a potential mapping to Obsidian types:
 - Obsidian: `![](https://www.youtube.com/watch?v=video_id)`
 	- standard markdown syntax
 - Logseq: `{{video https://www.youtube.com/watch?v=video_id}}`
-	- https://docs.logseq.com/#/page/embed%20media%20-%20audio%2C%20photos%2C%20videos
+	- <https://docs.logseq.com/#/page/embed%20media%20-%20audio%2C%20photos%2C%20videos>
 
-### Highlights
+### Asset links
+
+- Obsidian: same wiki-style links as for any other files in the vault (consistency!) `![[file.pdf]]` (path doesn't matter)
+- Logseq: relative links to the asset file `![](../assets/file.pdf)`
+
+### ~~Highlights~~ (not relevant)
 
 - Obsidian: `Text with ==a highlight== in the middle`
 	- <https://help.obsidian.md/Editing+and+formatting/Basic+formatting+syntax#Bold%2C+italics%2C+highlights>
 - Logseq: `Text with ^^a highlight^^ in the middle`
 	- <https://docs.logseq.com/#/page/markdown>
+
+> [!note]
+> Apparently, despite the documentation, Logseq also supports markdown syntax
 
 ### Numbered lists (ordered lists)
 

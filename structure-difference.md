@@ -1,6 +1,6 @@
 # Document structure difference between Obsidian and Logseq
 
-Apart from the different Markdown extension syntax, there is a big difference in how Obsidian and Logseq treat the document structure implied by the Markdown headings hierarchy. 
+Apart from the different Markdown extension syntax, there is a big difference in how Obsidian and Logseq treat the document structure implied by the Markdown headings hierarchy.
 
 Obsidian uses standard flat markdown structure where the headings are just a way to style the text and the paragraphs following the heading are considered at the same level as the heading. So the document structure is only implied by the visual hierarchy of the headings. It can become more apparent when you fold the document to see the headings hierarchy or add a table of contents.
 
@@ -9,9 +9,9 @@ Logseq, on the other hand, perceives any document as an outline with a rigid str
 ## Problem
 
 - Obsidian markdown structure is flat, with headings only implying the structure of the document
-  - https://help.obsidian.md/Editing+and+formatting/Basic+formatting+syntax#Headings
+  - <https://help.obsidian.md/Editing+and+formatting/Basic+formatting+syntax#Headings>
 - Logseq treats every document as an outline with an explicit structure of nested lists and headings are just a way to style the text
-  - https://docs.logseq.com/#/page/what%20is%20indentation%20and%20why%20does%20it%20matter%3F
+  - <https://docs.logseq.com/#/page/what%20is%20indentation%20and%20why%20does%20it%20matter%3F>
 
 ## Solution
 
@@ -70,8 +70,8 @@ Any other block elements like blockquotes, code blocks, or media embeds should b
 
 > [!note]
 >
-> Logseq can use tabs or spaces for indentation depending on configuration, so the conversion tool should be able to use either and have an option to specify the indentation type.
-> https://discuss.logseq.com/t/specify-indentation-type-changing-the-default-font/2703/6
+> Logseq can use tabs or spaces for indentation depending on configuration, so the conversion tool should be able to use either and have an option to specify the indentation type.  
+> <https://discuss.logseq.com/t/specify-indentation-type-changing-the-default-font/2703/6>
 
 #### Alternative approach
 
@@ -150,7 +150,7 @@ This example illustrates:
 - how subheadings are nested under the parent heading (e.g. h3 and h4), but then return to the same level as the parent heading depending on the level (e.g. h2-2),
 - how the misleveled headings (h4) are still nested under the parent heading (h2-2) even if they are out of order, because the outline structure must increment one level at a time.
 
-> [!idea]
-> 
-> Converter tool could fix the misleveled headings by moving them to the correct level under the parent heading.
-> This behaviour should be configurable, as it may not always be desired.
+> [!TIP] Idea
+>
+> Converter tool could fix the misleveled headings by moving them to the correct level under the parent heading.  
+> This behavior should be configurable, as it may not always be desired.
