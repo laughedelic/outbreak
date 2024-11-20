@@ -73,3 +73,9 @@ After you run the migration, you can open the destination folder in Logseq and s
 >
 > Contributions are welcome! Take a look at the [TODO.md](TODO.md) file and any `TODO` comments in the code.
 > Open a new [discussion](https://github.com/laughedelic/outbreak/discussions/new?category=ideas) to plan the implementation or suggest your ideas.
+
+## Related references
+
+- [Making Obsidian play nice with Logseq](https://discuss.logseq.com/t/making-obsidian-play-nice-with-logseq/1185) - Useful for initial exploration, but limited and dated.
+- [dundalek/longdown](https://github.com/dundalek/longdown) - A tool to convert flat Markdown files to the outline structure for Logseq. This is similar to the outline feature of this project, but I found it too limited for my needs. It also doesn't handle syntax conversion.
+- [vincent178/obsidian.py](https://gist.github.com/vincent178/1499cee2439ae76bc62d3d3242aacac4) - A python script to migrate obsidian notes to logseq, including tasks and daily notes. It has very limited functionality and requires editing some hardcoded values before usage.
