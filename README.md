@@ -28,13 +28,24 @@ While you can [make Obsidian play nicely with Logseq](https://discuss.logseq.com
 >
 > Also, documentation may be lacking, but don't hesitate to ask for help in the [discussions](https://github.com/laughedelic/outbreak/discussions/new?category=q-a)
 
-Until there are release binaries, you need to have [Deno](https://deno.land) runtime installed on your system, and you need to clone this repository to have the scripts available locally. Once that is done and you are in the cloned repository, you can run it with the following command:
+Until there are release binaries, you need to have [Deno](https://deno.land) runtime installed on your system.
+
+Then you can point Deno to the script file on GitHub to run it:
+
+```sh
+deno run https://raw.githubusercontent.com/laughedelic/outbreak/main/outbreak.ts <obsidian-vault-path> <output-path>
+```
+
+Alternatively, you clone the repository and run it locally. This is recommended if you want to modify the script. Once you are in the cloned repository, you can run it with the following command:
 
 ```sh
 deno run outbreak.ts <obsidian-vault-path> <output-path>
 ```
 
-Thanks to the secure Deno runtime, the script will *explicitly ask you for permissions* to read the input files (not modify!) and write the output files. So you know that you are not giving these scipts access to do anything else. It will then plan the migration, *show you the summary*, and ask for confirmation before proceeding. There is also a `--dry-run` flag that you can use to see the plan without actually writing any files.
+Thanks to the secure Deno runtime, the script will *explicitly ask you for permissions* to read the input files (not modify!) and write the output files. So you know that you are not giving these scipts access to do anything else. It will then plan the migration, *show you the summary*, and ask for confirmation before proceeding.
+
+- You can use `deno run --allow-read --allow-write ...` to skip the permissions prompt.
+- There is also a `--dry-run` flag that you can use to see the plan without actually writing any files.
 
 After you run the migration, you can open the destination folder in Logseq and see the results. If you run it more than once (e.g. after some adjustments), you should re-index the folder in Logseq to make sure it picks up the changes.
 
