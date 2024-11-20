@@ -7,7 +7,7 @@ There are surprisingly a lot of differences and nuances, so I made this tool to 
 ## Features
 
 - **Syntax Translation**: Converts various Markdown elements such as tasks, highlights, wiki-links, embeds, block quotes, callouts, and frontmatter from Obsidian to Logseq format.
-  - **Tasks**: Converts the syntax from the popular Obsidian Tasks plugin to Logseq org-mode tasks, including dates and priorities.
+  - **Tasks**: Converts the syntax from the popular [Obsidian Tasks](https://publish.obsidian.md/tasks/Introduction) plugin to Logseq org-mode tasks, including dates and priorities.
   - For the full list of syntax differences, see [syntax-differences.md](syntax-differences.md).
 - **Structure Outlining**: Converts the flat structure of Markdown documents into a nested list structure suitable for Logseq.
   - The structure implied by the headings in the document is converted into an outline native to Logseq.
